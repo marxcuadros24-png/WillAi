@@ -31,4 +31,4 @@ RUN python manage.py collectstatic --noinput --settings=config.settings.producti
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "echo '==> [1/3] Ejecutando migraciones en Supabase...' && python manage.py migrate --noinput --settings=config.settings.production && echo '==> [2/3] Cargando datos completos del MVP (NASA FIRMS, incidentes, brigadas, viviendas)...' && (python manage.py loaddata data/seed_mvp_data.json --settings=config.settings.production || python manage.py seed_base --settings=config.settings.production || true) && echo '==> [3/3] Iniciando servidor Gunicorn...' && exec gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 2 --threads 2 --timeout 120"]
+CMD ["sh", "-c", "echo '==> [1/3] Ejecutando migraciones en Supabase...' && python manage.py migrate --noinput --settings=config.settings.production && echo '==> [2/3] Cargando datos completos del MVP (NASA FIRMS, incidentes, brigadas, viviendas)...' && python manage.py cargar_datos_mvp --settings=config.settings.production && echo '==> [3/3] Iniciando servidor Gunicorn...' && exec gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 2 --threads 2 --timeout 120"]
