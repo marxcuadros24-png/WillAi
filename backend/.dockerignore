@@ -1,0 +1,16 @@
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.venv
+venv
+ENV
+env
+.env
+.git
+.gitignore
+*.log
+local_settings.py
+db.sqlite3
+media/*
+!media/.gitkeep

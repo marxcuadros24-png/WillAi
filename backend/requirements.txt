@@ -29,5 +29,6 @@ joblib>=1.4.0
 # Push Notifications & Firebase
 firebase-admin>=6.5.0
 
-# WSGI Production Server
+# WSGI Production Server & Static Files
 gunicorn>=22.0.0
+whitenoise>=6.7.0
