@@ -23,11 +23,32 @@ import type {
 
 const isLocalVite = typeof window !== 'undefined' && (window.location.port === '5173' || window.location.port === '3000');
 const defaultBackend = isLocalVite ? `${window.location.protocol}//${window.location.hostname}:8000` : '';
-export const BACKEND_URL = (import.meta.env.VITE_BACKEND_URL !== undefined)
-  ? import.meta.env.VITE_BACKEND_URL
-  : defaultBackend;
+const rawEnvBackend = typeof import.meta.env.VITE_BACKEND_URL === 'string'
+  ? import.meta.env.VITE_BACKEND_URL.trim().replace(/\/+$/, '')
+  : '';
+export const BACKEND_URL = rawEnvBackend || defaultBackend;
 export const API_BASE = `${BACKEND_URL}/api/v1`;
 export const PANEL_BASE = `${BACKEND_URL}/panel/api`;
+
+/**
+ * Función auxiliar para parsear respuestas JSON de forma segura,
+ * evitando el error "Unexpected token '<', <!doctype... is not valid JSON"
+ * cuando Vercel o un proxy devuelve una página HTML de fallback o error.
+ */
+export async function parseJsonResponse(res: Response, endpointDesc: string = 'servidor'): Promise<any> {
+  const contentType = res.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) {
+    const text = await res.text();
+    if (text.includes('<!doctype') || text.includes('<!DOCTYPE') || text.includes('<html')) {
+      throw new Error(
+        `El backend devolvió HTML en vez de JSON (${res.status} ${res.statusText}). ` +
+        `Revisa que tu backend en Render esté encendido (Live) y que la variable VITE_BACKEND_URL esté configurada en Vercel sin barra diagonal al final.`
+      );
+    }
+    throw new Error(`Respuesta no válida del ${endpointDesc} (${res.status}): ${text.slice(0, 100)}`);
+  }
+  return await res.json();
+}
 
 /**
  * Resuelve URLs de archivos multimedia (evidencia fotográfica, fotos de reporte)
@@ -88,7 +109,7 @@ export async function fetchIncidentes(): Promise<Incidente[]> {
   try {
     const res = await fetch(`${API_BASE}/incidentes/incidentes/`, { cache: 'no-store' });
     if (!res.ok) return [];
-    const data = await res.json();
+    const data = await parseJsonResponse(res, 'incidentes');
     const list = data.results || (Array.isArray(data) ? data : []);
 
     return list.map((item: any) => ({
@@ -137,7 +158,7 @@ export async function fetchFocosFirms(
     const qs = params.toString() ? `?${params.toString()}` : '';
     const res = await fetch(`${API_BASE}/firms/detecciones/${qs}`, { cache: 'no-store' });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
+    const data = await parseJsonResponse(res, 'focos NASA FIRMS');
     const rawList = data.results || (Array.isArray(data) ? data : []);
 
     return rawList.map((item: any) => ({
@@ -658,7 +679,7 @@ export async function loginApi(username: string, password: string): Promise<any>
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password })
   });
-  const data = await res.json();
+  const data = await parseJsonResponse(res, 'endpoint de login');
   if (!res.ok || !data.success) {
     throw new Error(data.error || 'Credenciales incorrectas');
   }
