@@ -168,6 +168,17 @@ class SimulacionPropagacionViewSet(viewsets.ModelViewSet):
             )
 
         incidente_id = data.get('incidente')
+        if incidente_id is not None:
+            try:
+                from apps.incidentes.models import Incidente
+                inc_id_int = int(incidente_id)
+                if not Incidente.objects.filter(id_incidente=inc_id_int).exists():
+                    incidente_id = None
+                else:
+                    incidente_id = inc_id_int
+            except (ValueError, TypeError, Exception):
+                incidente_id = None
+
         parametros = data.get('parametros_entrada', {})
         for param_key in ['viento_kmh', 'dir_viento_grados', 'ffmc', 'dem_path', 'ruta_dem', 'combustible_path', 'ruta_combustible', 'grid_size', 'alfa_r0', 'alfa_viento', 'alfa_pendiente', 'ensamble_viento']:
             if param_key in data and param_key not in parametros:
@@ -190,9 +201,18 @@ class SimulacionPropagacionViewSet(viewsets.ModelViewSet):
             nivel_incertidumbre="CALIBRADO_LOFO_ALTOANDINO",
         )
 
-        # Disparar tarea asíncrona de Celery
+        # Ejecución segura de la simulación: intentar Celery, o ejecutar directamente
         from .tasks import ejecutar_simulacion_propagacion_task
-        ejecutar_simulacion_propagacion_task.delay(simulacion.id_simulacion)
+        from .services import ejecutar_simulacion_propagacion
+        try:
+            ejecutar_simulacion_propagacion_task.delay(simulacion.id_simulacion)
+        except Exception:
+            try:
+                ejecutar_simulacion_propagacion(simulacion.id_simulacion)
+            except Exception as e_run:
+                simulacion.estado = SimulacionPropagacion.EstadoSimulacion.ERROR
+                simulacion.errores = str(e_run)
+                simulacion.save(update_fields=['estado', 'errores'])
 
         # Refrescar desde BD
         simulacion.refresh_from_db()
