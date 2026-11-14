@@ -39,6 +39,8 @@ if 'default' in DATABASES:
 # Celery síncrono para despliegues serverless o free tier sin Redis dedicado
 CELERY_TASK_ALWAYS_EAGER = env.bool('CELERY_TASK_ALWAYS_EAGER', default=True)
 CELERY_TASK_EAGER_PROPAGATES = True
+task_always_eager = True
+task_eager_propagates = True
 
 # Configuración de proxy inverso (Render / Cloudflare)
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')

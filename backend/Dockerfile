@@ -2,7 +2,9 @@ FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    DEBIAN_FRONTEND=noninteractive
+    DEBIAN_FRONTEND=noninteractive \
+    DJANGO_SETTINGS_MODULE=config.settings.production \
+    DJANGO_ENV=production
 
 # Dependencias del sistema: GDAL, GEOS, PROJ y compiladores necesarios para GeoDjango y rasterio
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -31,4 +33,4 @@ RUN python manage.py collectstatic --noinput --settings=config.settings.producti
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "echo '==> [1/3] Ejecutando migraciones en Supabase...' && python manage.py migrate --noinput --settings=config.settings.production && echo '==> [2/3] Cargando datos completos del MVP (NASA FIRMS, incidentes, brigadas, viviendas)...' && python manage.py cargar_datos_mvp --settings=config.settings.production && echo '==> [3/3] Iniciando servidor Gunicorn...' && exec gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 2 --threads 2 --timeout 120"]
+CMD ["sh", "-c", "python manage.py migrate --noinput && (python manage.py cargar_datos_mvp &) && exec gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 2 --threads 2 --timeout 120"]

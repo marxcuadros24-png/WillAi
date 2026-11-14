@@ -13,15 +13,29 @@ from drf_spectacular.views import (
 )
 
 def custom_500(request):
+    import sys
+    exc_type, exc_value, _ = sys.exc_info()
+    detail = f": {exc_value}" if exc_value else ""
     return JsonResponse({
         'success': False,
-        'error': 'Error interno del servidor (HTTP 500). Verifica la conexión a la base de datos Supabase o revisa la pestaña Logs en Render.',
+        'error': f'Error interno del servidor (HTTP 500){detail}. Revisa logs en Render o conexión a Supabase.',
         'path': request.path
     }, status=500)
 
 handler500 = 'config.urls.custom_500'
 
+def health_check(request):
+    return JsonResponse({
+        'status': 'ok',
+        'service': 'willai-backend',
+        'version': '1.0.0'
+    })
+
 urlpatterns = [
+    # Health checks para Render y UptimeRobot (24/7 pinger)
+    path('health/', health_check, name='health-root'),
+    path('api/health/', health_check, name='health-api'),
+
     # Django Admin (Panel de Operaciones & Gestión)
     path('admin/', admin.site.urls),
 

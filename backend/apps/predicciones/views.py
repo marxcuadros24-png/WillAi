@@ -201,18 +201,14 @@ class SimulacionPropagacionViewSet(viewsets.ModelViewSet):
             nivel_incertidumbre="CALIBRADO_LOFO_ALTOANDINO",
         )
 
-        # Ejecución segura de la simulación: intentar Celery, o ejecutar directamente
-        from .tasks import ejecutar_simulacion_propagacion_task
+        # Ejecución directa y resiliente de la simulación celular elíptica
         from .services import ejecutar_simulacion_propagacion
         try:
-            ejecutar_simulacion_propagacion_task.delay(simulacion.id_simulacion)
-        except Exception:
-            try:
-                ejecutar_simulacion_propagacion(simulacion.id_simulacion)
-            except Exception as e_run:
-                simulacion.estado = SimulacionPropagacion.EstadoSimulacion.ERROR
-                simulacion.errores = str(e_run)
-                simulacion.save(update_fields=['estado', 'errores'])
+            ejecutar_simulacion_propagacion(simulacion.id_simulacion)
+        except Exception as e_run:
+            simulacion.estado = SimulacionPropagacion.EstadoSimulacion.ERROR
+            simulacion.errores = str(e_run)
+            simulacion.save(update_fields=['estado', 'errores'])
 
         # Refrescar desde BD
         simulacion.refresh_from_db()
