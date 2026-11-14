@@ -5,11 +5,21 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.http import JsonResponse
 from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularRedocView,
     SpectacularSwaggerView,
 )
+
+def custom_500(request):
+    return JsonResponse({
+        'success': False,
+        'error': 'Error interno del servidor (HTTP 500). Verifica la conexión a la base de datos Supabase o revisa la pestaña Logs en Render.',
+        'path': request.path
+    }, status=500)
+
+handler500 = 'config.urls.custom_500'
 
 urlpatterns = [
     # Django Admin (Panel de Operaciones & Gestión)

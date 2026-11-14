@@ -23,6 +23,19 @@ else:
         }
     }
 
+# Configuraciones esenciales para Supabase / PostgreSQL en la nube
+if 'default' in DATABASES:
+    # 1. Requerir SSL para Supabase si no está especificado
+    DATABASES['default'].setdefault('OPTIONS', {})
+    if 'sslmode' not in DATABASES['default']['OPTIONS']:
+        DATABASES['default']['OPTIONS']['sslmode'] = 'require'
+    
+    # 2. Desactivar server-side cursors (requerido para PgBouncer / Supabase Connection Pooler)
+    DATABASES['default']['DISABLE_SERVER_SIDE_CURSORS'] = True
+    
+    # 3. Cerrar conexiones al terminar cada request (evita agotar el pool de conexiones de Supabase)
+    DATABASES['default']['CONN_MAX_AGE'] = 0
+
 # Celery síncrono para despliegues serverless o free tier sin Redis dedicado
 CELERY_TASK_ALWAYS_EAGER = env.bool('CELERY_TASK_ALWAYS_EAGER', default=True)
 CELERY_TASK_EAGER_PROPAGATES = True
