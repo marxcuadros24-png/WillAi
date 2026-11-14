@@ -1,0 +1,677 @@
+{
+  "type": "FeatureCollection",
+  "name": "demarcacion_geografica_parinacochas",
+  "crs": {
+    "type": "name",
+    "properties": {
+      "name": "urn:ogc:def:crs:OGC:1.3:CRS84"
+    }
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -74.3,
+              -15.65
+            ],
+            [
+              -72.85,
+              -15.65
+            ],
+            [
+              -72.85,
+              -14.5
+            ],
+            [
+              -74.3,
+              -14.5
+            ],
+            [
+              -74.3,
+              -15.65
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "tipo": "Límite Provincial Oficial",
+        "nombre": "Provincia de Parinacochas (Ayacucho)",
+        "departamento": "Ayacucho",
+        "superficie_aprox_km2": 5968.32,
+        "fuente": "IGN / INEI / WillAI"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -73.85,
+              -14.88
+            ],
+            [
+              -73.6,
+              -14.88
+            ],
+            [
+              -73.6,
+              -15.15
+            ],
+            [
+              -73.85,
+              -15.15
+            ],
+            [
+              -73.85,
+              -14.88
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "tipo": "Distrito Oficial",
+        "nombre": "Coracora",
+        "capital": "Coracora",
+        "ubigeo": "050701",
+        "provincia": "Parinacochas",
+        "departamento": "Ayacucho"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -74.25,
+              -14.98
+            ],
+            [
+              -73.85,
+              -14.98
+            ],
+            [
+              -73.85,
+              -15.22
+            ],
+            [
+              -74.25,
+              -15.22
+            ],
+            [
+              -74.25,
+              -14.98
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "tipo": "Distrito Oficial",
+        "nombre": "Chumpi",
+        "capital": "Chumpi",
+        "ubigeo": "050702",
+        "provincia": "Parinacochas",
+        "departamento": "Ayacucho"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -74.0,
+              -14.5
+            ],
+            [
+              -73.65,
+              -14.5
+            ],
+            [
+              -73.65,
+              -14.88
+            ],
+            [
+              -74.0,
+              -14.88
+            ],
+            [
+              -74.0,
+              -14.5
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "tipo": "Distrito Oficial",
+        "nombre": "Coronel Castañeda",
+        "capital": "Aniso",
+        "ubigeo": "050703",
+        "provincia": "Parinacochas",
+        "departamento": "Ayacucho"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -74.25,
+              -14.65
+            ],
+            [
+              -74.0,
+              -14.65
+            ],
+            [
+              -74.0,
+              -14.98
+            ],
+            [
+              -74.25,
+              -14.98
+            ],
+            [
+              -74.25,
+              -14.65
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "tipo": "Distrito Oficial",
+        "nombre": "Pacapausa",
+        "capital": "Pacapausa",
+        "ubigeo": "050704",
+        "provincia": "Parinacochas",
+        "departamento": "Ayacucho"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -74.3,
+              -15.22
+            ],
+            [
+              -73.7,
+              -15.22
+            ],
+            [
+              -73.7,
+              -15.65
+            ],
+            [
+              -74.3,
+              -15.65
+            ],
+            [
+              -74.3,
+              -15.22
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "tipo": "Distrito Oficial",
+        "nombre": "Pullo",
+        "capital": "Pullo",
+        "ubigeo": "050705",
+        "provincia": "Parinacochas",
+        "departamento": "Ayacucho"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -73.7,
+              -15.15
+            ],
+            [
+              -73.1,
+              -15.15
+            ],
+            [
+              -73.1,
+              -15.65
+            ],
+            [
+              -73.7,
+              -15.65
+            ],
+            [
+              -73.7,
+              -15.15
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "tipo": "Distrito Oficial",
+        "nombre": "Puyusca",
+        "capital": "Incuyo",
+        "ubigeo": "050706",
+        "provincia": "Parinacochas",
+        "departamento": "Ayacucho"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -73.78,
+              -15.02
+            ],
+            [
+              -73.58,
+              -15.02
+            ],
+            [
+              -73.58,
+              -15.18
+            ],
+            [
+              -73.78,
+              -15.18
+            ],
+            [
+              -73.78,
+              -15.02
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "tipo": "Distrito Oficial",
+        "nombre": "San Francisco de Ravacayco",
+        "capital": "San Francisco de Ravacayco",
+        "ubigeo": "050707",
+        "provincia": "Parinacochas",
+        "departamento": "Ayacucho"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -73.65,
+              -14.5
+            ],
+            [
+              -73.2,
+              -14.5
+            ],
+            [
+              -73.2,
+              -14.88
+            ],
+            [
+              -73.65,
+              -14.88
+            ],
+            [
+              -73.65,
+              -14.5
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "tipo": "Distrito Oficial",
+        "nombre": "Upahuacho",
+        "capital": "Upahuacho",
+        "ubigeo": "050708",
+        "provincia": "Parinacochas",
+        "departamento": "Ayacucho"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -73.69,
+              -15.23
+            ],
+            [
+              -73.66,
+              -15.24
+            ],
+            [
+              -73.64,
+              -15.27
+            ],
+            [
+              -73.64,
+              -15.31
+            ],
+            [
+              -73.66,
+              -15.33
+            ],
+            [
+              -73.7,
+              -15.32
+            ],
+            [
+              -73.72,
+              -15.29
+            ],
+            [
+              -73.71,
+              -15.25
+            ],
+            [
+              -73.69,
+              -15.23
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "tipo": "Cuerpo de Agua / Humedal",
+        "nombre": "Laguna de Parinacochas",
+        "descripcion": "Mayor humedal y lago salino altoandino de Ayacucho (~3,200 msnm)",
+        "categoria": "Hidrografía"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.4478,
+          -15.3314
+        ]
+      },
+      "properties": {
+        "tipo": "Hito Geográfico / Volcán",
+        "nombre": "Volcán Sara Sara (5,505 msnm)",
+        "altitud_msnm": 5505,
+        "descripcion": "Estratovolcán y nevado tutelar de la Provincia de Parinacochas"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.8333,
+          -15.0667
+        ]
+      },
+      "properties": {
+        "tipo": "Capital Distrital",
+        "nombre": "Chumpi",
+        "provincia": "Parinacochas",
+        "departamento": "Ayacucho",
+        "ubigeo": "050702"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.7806,
+          -15.0189
+        ]
+      },
+      "properties": {
+        "tipo": "Capital Distrital",
+        "nombre": "Coracora",
+        "provincia": "Parinacochas",
+        "departamento": "Ayacucho",
+        "ubigeo": "050701"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.6833,
+          -14.8833
+        ]
+      },
+      "properties": {
+        "tipo": "Capital Distrital",
+        "nombre": "Coronel Castañeda",
+        "provincia": "Parinacochas",
+        "departamento": "Ayacucho",
+        "ubigeo": "050703"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.7167,
+          -14.9333
+        ]
+      },
+      "properties": {
+        "tipo": "Capital Distrital",
+        "nombre": "Pacapausa",
+        "provincia": "Parinacochas",
+        "departamento": "Ayacucho",
+        "ubigeo": "050704"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.7333,
+          -15.2833
+        ]
+      },
+      "properties": {
+        "tipo": "Capital Distrital",
+        "nombre": "Pullo",
+        "provincia": "Parinacochas",
+        "departamento": "Ayacucho",
+        "ubigeo": "050705"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.6167,
+          -15.2667
+        ]
+      },
+      "properties": {
+        "tipo": "Capital Distrital",
+        "nombre": "Puyusca",
+        "provincia": "Parinacochas",
+        "departamento": "Ayacucho",
+        "ubigeo": "050706"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.7,
+          -15.05
+        ]
+      },
+      "properties": {
+        "tipo": "Capital Distrital",
+        "nombre": "San Francisco de Ravacayco",
+        "provincia": "Parinacochas",
+        "departamento": "Ayacucho",
+        "ubigeo": "050707"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.55,
+          -14.8167
+        ]
+      },
+      "properties": {
+        "tipo": "Capital Distrital",
+        "nombre": "Upahuacho",
+        "provincia": "Parinacochas",
+        "departamento": "Ayacucho",
+        "ubigeo": "050708"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.755,
+          -14.985
+        ]
+      },
+      "properties": {
+        "tipo": "Anexo",
+        "nombre": "Baños Termales Pumahuasi",
+        "distrito": "Coracora"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.742,
+          -14.962
+        ]
+      },
+      "properties": {
+        "tipo": "Sector",
+        "nombre": "Cerro Pumahuasi",
+        "distrito": "Coracora"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.7806,
+          -15.0189
+        ]
+      },
+      "properties": {
+        "tipo": "Centro Poblado",
+        "nombre": "Coracora Centro",
+        "distrito": "Coracora"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.834,
+          -15.062
+        ]
+      },
+      "properties": {
+        "tipo": "Comunidad Campesina",
+        "nombre": "Huaccana",
+        "distrito": "Coracora"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.81,
+          -15.08
+        ]
+      },
+      "properties": {
+        "tipo": "Comunidad Campesina",
+        "nombre": "Huallhua",
+        "distrito": "Coracora"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.74,
+          -15.025
+        ]
+      },
+      "properties": {
+        "tipo": "Sector",
+        "nombre": "Muchapampa",
+        "distrito": "Coracora"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.79,
+          -15.11
+        ]
+      },
+      "properties": {
+        "tipo": "Comunidad Campesina",
+        "nombre": "Paucaray",
+        "distrito": "Coracora"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.762,
+          -15.045
+        ]
+      },
+      "properties": {
+        "tipo": "Anexo",
+        "nombre": "Secce",
+        "distrito": "Coracora"
+      }
+    }
+  ]
+}

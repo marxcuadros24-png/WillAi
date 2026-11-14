@@ -1,0 +1,789 @@
+/* ==========================================================================
+   WILLAI — NASA SPACE APPS LANDING PAGE (HIGH-TECH UNIFIED ANDEAN THEME)
+   ========================================================================== */
+
+/* 1. CRITICAL: UNLOCK SCROLL ON PARENT CONTAINERS */
+html:has(.lp-container),
+body:has(.lp-container),
+#root:has(.lp-container) {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  height: auto !important;
+  min-height: 100vh !important;
+}
+
+:root {
+  --lp-bg: #030712;
+  --lp-bg-card: rgba(15, 23, 42, 0.75);
+  --lp-bg-card-hover: rgba(30, 41, 59, 0.9);
+  --lp-border: rgba(255, 255, 255, 0.08);
+  --lp-border-glow: rgba(239, 68, 68, 0.4);
+  --lp-primary: #ef4444;
+  --lp-primary-glow: rgba(239, 68, 68, 0.25);
+  --lp-orange: #f97316;
+  --lp-amber: #f59e0b;
+  --lp-cyan: #38bdf8;
+  --lp-emerald: #10b981;
+  --lp-text-primary: #f8fafc;
+  --lp-text-secondary: #94a3b8;
+  --lp-text-muted: #64748b;
+  --lp-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* MAIN LANDING CONTAINER */
+.lp-container {
+  width: 100%;
+  min-height: 100vh;
+  background-color: var(--lp-bg);
+  background-image: 
+    radial-gradient(circle at 50% 0%, rgba(239, 68, 68, 0.14) 0%, transparent 60%),
+    radial-gradient(circle at 85% 30%, rgba(56, 189, 248, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 15% 70%, rgba(16, 185, 129, 0.06) 0%, transparent 50%),
+    linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 48px 48px, 48px 48px;
+  color: var(--lp-text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  overflow-x: hidden;
+  position: relative;
+  scroll-behavior: smooth;
+}
+
+/* NAVBAR */
+.lp-navbar {
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  background: rgba(3, 7, 18, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--lp-border);
+  z-index: 999;
+}
+
+.lp-nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: #ffffff;
+}
+
+.lp-logo-img {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 1.5px solid rgba(255, 107, 0, 0.45);
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.45);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.lp-nav-brand:hover .lp-logo-img {
+  transform: scale(1.05);
+  box-shadow: 0 0 22px rgba(255, 107, 0, 0.7);
+}
+
+.lp-brand-title {
+  font-size: 1.35rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #ffffff 40%, #fb923c 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.lp-brand-sub {
+  font-size: 0.72rem;
+  color: var(--lp-cyan);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  font-weight: 800;
+}
+
+.lp-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* BUTTONS */
+.lp-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.lp-btn-primary {
+  background: linear-gradient(135deg, #ef4444, #ea580c);
+  color: #ffffff;
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.4);
+}
+
+.lp-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 24px rgba(239, 68, 68, 0.65);
+}
+
+.lp-btn-emerald {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.lp-btn-emerald:hover {
+  background: rgba(16, 185, 129, 0.25);
+  border-color: #10b981;
+  transform: translateY(-2px);
+}
+
+.lp-btn-outline {
+  background: rgba(255, 255, 255, 0.04);
+  color: #e2e8f0;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.lp-btn-outline:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.lp-btn-github {
+  background: rgba(255, 255, 255, 0.05);
+  color: #e2e8f0;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.lp-btn-github:hover {
+  background: #ffffff;
+  color: #030712;
+  transform: translateY(-2px);
+}
+
+.lp-btn-youtube {
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.lp-btn-youtube:hover {
+  background: #ef4444;
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.5);
+}
+
+/* ==========================================================================
+   2. HERO SECTION — DYNAMIC TWO-COLUMN WITH HUD
+   ========================================================================== */
+.lp-hero-wrapper {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 50px 24px 40px 24px;
+}
+
+.lp-hero-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 40px;
+  align-items: center;
+}
+
+.lp-badge-nasa {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  padding: 5px 14px;
+  border-radius: 9999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--lp-cyan);
+  margin-bottom: 18px;
+}
+
+.lp-badge-nasa-img {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.lp-hero-title {
+  font-size: 3.8rem;
+  font-weight: 950;
+  line-height: 1.06;
+  letter-spacing: -0.04em;
+  margin-bottom: 20px;
+  color: #ffffff;
+}
+
+.lp-hero-highlight {
+  background: linear-gradient(135deg, #ff4500 0%, #ff8c00 50%, #fbbf24 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.lp-hero-desc {
+  font-size: 1.02rem;
+  line-height: 1.6;
+  color: var(--lp-text-secondary);
+  margin-bottom: 24px;
+  max-width: 620px;
+}
+
+.lp-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+}
+
+/* KPI CHIPS */
+.lp-kpi-chips {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.lp-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--lp-border);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  color: var(--lp-text-secondary);
+  font-family: var(--lp-font-mono);
+}
+
+.lp-chip strong {
+  color: #ffffff;
+}
+
+/* ==========================================================================
+   LIVE ANDEAN TELEMETRY HUD (RIGHT COLUMN OF HERO)
+   ========================================================================== */
+.lp-hud-card {
+  background: rgba(11, 17, 32, 0.85);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), 0 0 24px rgba(56, 189, 248, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.lp-hud-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #38bdf8, #ef4444, transparent);
+  animation: hudScan 4s linear infinite;
+}
+
+@keyframes hudScan {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.lp-hud-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 12px;
+  margin-bottom: 14px;
+}
+
+.lp-hud-radar-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #38bdf8;
+  font-family: var(--lp-font-mono);
+}
+
+.lp-radar-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 10px #10b981;
+  animation: pulseDot 1.8s ease-in-out infinite;
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.8); }
+}
+
+.lp-hud-location {
+  font-size: 0.72rem;
+  color: var(--lp-text-muted);
+  font-family: var(--lp-font-mono);
+}
+
+.lp-hud-metric-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.lp-hud-metric-box {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid var(--lp-border);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.lp-hud-metric-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--lp-text-muted);
+  margin-bottom: 4px;
+}
+
+.lp-hud-metric-val {
+  font-size: 1.35rem;
+  font-weight: 900;
+  font-family: var(--lp-font-mono);
+}
+
+.lp-hud-quechua-banner {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.lp-hud-quechua-text {
+  font-size: 0.86rem;
+  line-height: 1.45;
+  color: #fca5a5;
+}
+
+.lp-hud-quechua-text strong {
+  color: #ffffff;
+}
+
+/* ==========================================================================
+   3. THE ANDEAN PROBLEM SECTION
+   ========================================================================== */
+.lp-section {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 40px 24px;
+}
+
+.lp-section-header {
+  text-align: center;
+  max-width: 820px;
+  margin: 0 auto 36px auto;
+}
+
+.lp-section-tag {
+  display: inline-block;
+  font-size: 0.88rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: #ef4444;
+  margin-bottom: 10px;
+}
+
+.lp-section-title {
+  font-size: 2.85rem;
+  font-weight: 950;
+  letter-spacing: -0.035em;
+  line-height: 1.15;
+  color: #ffffff;
+  margin-bottom: 14px;
+}
+
+.lp-section-desc {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--lp-text-secondary);
+}
+
+.lp-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.lp-card {
+  background: var(--lp-bg-card);
+  border: 1px solid var(--lp-border);
+  border-radius: 14px;
+  padding: 24px;
+  transition: all 0.25s ease;
+  position: relative;
+}
+
+.lp-card:hover {
+  background: var(--lp-bg-card-hover);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
+}
+
+.lp-card-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.lp-card-title {
+  font-size: 1.45rem;
+  font-weight: 850;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: #ffffff;
+  margin-bottom: 12px;
+}
+
+.lp-card-text {
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--lp-text-secondary);
+}
+
+/* ==========================================================================
+   4. INTERACTIVE SOLUTION SHOWCASE (DUAL-FRONT TABS)
+   ========================================================================== */
+.lp-solution-box {
+  background: rgba(11, 17, 32, 0.7);
+  border: 1px solid var(--lp-border);
+  border-radius: 20px;
+  padding: 32px;
+}
+
+.lp-tab-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 30px;
+}
+
+.lp-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: rgba(15, 23, 42, 0.6);
+  color: var(--lp-text-secondary);
+  border: 1px solid var(--lp-border);
+}
+
+.lp-tab-btn.active {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ffffff;
+  border-color: #ef4444;
+  box-shadow: 0 0 18px rgba(239, 68, 68, 0.35);
+}
+
+.lp-tab-content-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  align-items: center;
+}
+
+.lp-bullet-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.lp-bullet-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--lp-text-secondary);
+}
+
+.lp-bullet-check {
+  color: #10b981;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.lp-preview-box {
+  background: rgba(3, 7, 18, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+}
+
+/* ==========================================================================
+   5. NASA EARTH OBSERVATIONS GRID
+   ========================================================================== */
+.lp-nasa-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.lp-nasa-card {
+  background: var(--lp-bg-card);
+  border: 1px solid var(--lp-border);
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.25s ease;
+}
+
+.lp-nasa-card:hover {
+  border-color: rgba(56, 189, 248, 0.4);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(56, 189, 248, 0.15);
+}
+
+.lp-nasa-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.lp-nasa-title {
+  font-size: 1.35rem;
+  font-weight: 850;
+  letter-spacing: -0.02em;
+  color: #38bdf8;
+}
+
+.lp-nasa-sub {
+  font-size: 0.72rem;
+  font-family: var(--lp-font-mono);
+  background: rgba(56, 189, 248, 0.1);
+  padding: 3px 8px;
+  border-radius: 4px;
+  color: #38bdf8;
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   6. MEET THE TEAM
+   ========================================================================== */
+.lp-team-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+}
+
+.lp-member-card {
+  background: var(--lp-bg-card);
+  border: 1px solid var(--lp-border);
+  border-radius: 14px;
+  padding: 20px;
+  text-align: center;
+  transition: all 0.25s ease;
+}
+
+.lp-member-card:hover {
+  background: var(--lp-bg-card-hover);
+  border-color: rgba(239, 68, 68, 0.35);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5);
+}
+
+.lp-member-avatar-wrapper {
+  width: 96px;
+  height: 96px;
+  margin: 0 auto 16px auto;
+  border-radius: 50%;
+  padding: 3px;
+  background: linear-gradient(135deg, #ef4444, #38bdf8);
+  box-shadow: 0 0 18px rgba(239, 68, 68, 0.35);
+}
+
+.lp-member-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #030712;
+}
+
+.lp-member-name {
+  font-size: 1.3rem;
+  font-weight: 850;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  margin-bottom: 6px;
+}
+
+.lp-member-role {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--lp-cyan);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.lp-member-desc {
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--lp-text-secondary);
+}
+
+/* ==========================================================================
+   7. WATER BASIN CALLOUT (BOFEDALES)
+   ========================================================================== */
+.lp-cta-banner {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(7, 10, 18, 0.95));
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 20px;
+  padding: 36px 24px;
+  text-align: center;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6), 0 0 24px rgba(56, 189, 248, 0.1);
+}
+
+/* ==========================================================================
+   8. FOOTER
+   ========================================================================== */
+.lp-footer {
+  border-top: 1px solid var(--lp-border);
+  padding: 30px 24px;
+  background: #02050b;
+  font-size: 0.84rem;
+  color: var(--lp-text-muted);
+}
+
+/* ==========================================================================
+   9. VIDEO DEMO MODAL
+   ========================================================================== */
+.lp-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 7, 18, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+}
+
+.lp-modal-box {
+  width: 100%;
+  max-width: 800px;
+  background: #0b1120;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8);
+  position: relative;
+}
+
+.lp-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.lp-modal-close {
+  background: transparent;
+  border: none;
+  color: var(--lp-text-secondary);
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.lp-modal-close:hover {
+  color: #ffffff;
+}
+
+/* ==========================================================================
+   10. RESPONSIVE MEDIA QUERIES
+   ========================================================================== */
+@media (max-width: 1024px) {
+  .lp-hero-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  .lp-grid-3 {
+    grid-template-columns: 1fr;
+  }
+  .lp-tab-content-grid {
+    grid-template-columns: 1fr;
+  }
+  .lp-nasa-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .lp-team-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .lp-navbar {
+    padding: 0 16px;
+  }
+  .lp-hero-title {
+    font-size: 2.1rem;
+  }
+  .lp-hud-metric-row {
+    grid-template-columns: 1fr;
+  }
+  .lp-nasa-grid {
+    grid-template-columns: 1fr;
+  }
+  .lp-team-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,241 @@
+<!DOCTYPE qgis PUBLIC 'http://mrcc.com/qgis.dtd' 'SYSTEM'>
+<qgis projectname="WillAI - Mapa de Incendios Fusionados Parinacochas">
+  <title>WillAI - Rastros Satelitales Fusionados (VIIRS + MODIS)</title>
+  <homePath path=""/>
+  
+  <!-- ENCUADRE DE CÁMARA (EXTENT) EN PARINACOCHAS -->
+  <mapcanvas>
+    <units>degrees</units>
+    <extent>
+      <xmin>-74.3500</xmin>
+      <ymin>-15.7000</ymin>
+      <xmax>-72.8000</xmax>
+      <ymax>-14.4500</ymax>
+    </extent>
+    <rotation>0</rotation>
+    <destinationsrs>
+      <spatialrefsys nativeFormat="Wkt">
+        <wkt>GEOGCRS["WGS 84",DATUM["World Geodetic System 1984",ELLIPSOID["WGS 84",6378137,298.257223563,LENGTHUNIT["metre",1]]],PRIMEM["Greenwich",0,ANGLEUNIT["degree",0.0174532925199433]],CS[ellipsoidal,2],AXIS["geodetic latitude (Lat)",north,ORDER[1],ANGLEUNIT["degree",0.0174532925199433]],AXIS["geodetic longitude (Lon)",east,ORDER[2],ANGLEUNIT["degree",0.0174532925199433]],USAGE[SCOPE["Horizontal component of 3D system."],AREA["World."],BBOX[-90,-180,90,180]],ID["EPSG",4326]]</wkt>
+        <proj4>+proj=longlat +datum=WGS84 +no_defs</proj4>
+        <srsid>3452</srsid>
+        <srid>4326</srid>
+        <authid>EPSG:4326</authid>
+        <description>WGS 84</description>
+      </spatialrefsys>
+    </destinationsrs>
+  </mapcanvas>
+
+  <projectLayers>
+    <!-- CAPA 1 (PRINCIPAL): RASTROS DE FUEGO FUSIONADOS POR DÍA (MULTI-SENSOR VIIRS + MODIS) -->
+    <maplayer type="vector" geometry="Polygon" name="1. 🔥 Rastros Fuego Fusionados (VIIRS + MODIS)" id="layer_rastros_fusionados" readOnly="0">
+      <id>layer_rastros_fusionados</id>
+      <datasource>./1_rastros_fuego_fusionados_dia.geojson</datasource>
+      <keywordList><value></value></keywordList>
+      <layername>1. 🔥 Rastros Fuego Fusionados (VIIRS + MODIS)</layername>
+      <srs>
+        <spatialrefsys><authid>EPSG:4326</authid></spatialrefsys>
+      </srs>
+      <provider encoding="UTF-8">ogr</provider>
+      <!-- Controlador Temporal nativo enlazado a la fecha del rastro -->
+      <temporal mode="FixedTemporalRange" enabled="1" startField="fecha_inicio_utc" endField="fecha_fin_utc" durationField="" durationUnit="min" fixedDuration="0">
+        <fixedRange>
+          <start></start>
+          <end></end>
+        </fixedRange>
+      </temporal>
+      <renderer-v2 type="graduatedSymbol" attr="frp_total_mw" symbollevels="0">
+        <ranges>
+          <range lower="0.0" upper="20.0" label="Bajo (&lt; 20 MW)" symbol="0"/>
+          <range lower="20.0" upper="60.0" label="Moderado (20 - 60 MW)" symbol="1"/>
+          <range lower="60.0" upper="150.0" label="Alto (60 - 150 MW)" symbol="2"/>
+          <range lower="150.0" upper="20000.0" label="Extremo (&gt; 150 MW - Multi-Sensor)" symbol="3"/>
+        </ranges>
+        <symbols>
+          <symbol type="fill" name="0">
+            <layer class="SimpleFill">
+              <prop k="color" v="255,235,59,200"/>
+              <prop k="outline_color" v="251,192,45,255"/>
+              <prop k="outline_width" v="0.4"/>
+            </layer>
+          </symbol>
+          <symbol type="fill" name="1">
+            <layer class="SimpleFill">
+              <prop k="color" v="255,152,0,210"/>
+              <prop k="outline_color" v="245,124,0,255"/>
+              <prop k="outline_width" v="0.45"/>
+            </layer>
+          </symbol>
+          <symbol type="fill" name="2">
+            <layer class="SimpleFill">
+              <prop k="color" v="244,67,54,225"/>
+              <prop k="outline_color" v="211,47,47,255"/>
+              <prop k="outline_width" v="0.5"/>
+            </layer>
+          </symbol>
+          <symbol type="fill" name="3">
+            <layer class="SimpleFill">
+              <prop k="color" v="183,28,28,240"/>
+              <prop k="outline_color" v="136,14,79,255"/>
+              <prop k="outline_width" v="0.7"/>
+            </layer>
+          </symbol>
+        </symbols>
+      </renderer-v2>
+    </maplayer>
+
+    <!-- CAPA 2: CICATRICES TOTALES CONSOLIDADAS -->
+    <maplayer type="vector" geometry="Polygon" name="2. Cicatrices Totales Consolidadas" id="layer_cicatrices" readOnly="0">
+      <id>layer_cicatrices</id>
+      <datasource>./2_cicatrices_totales_incendios.geojson</datasource>
+      <keywordList><value></value></keywordList>
+      <layername>2. Cicatrices Totales Consolidadas</layername>
+      <srs>
+        <spatialrefsys><authid>EPSG:4326</authid></spatialrefsys>
+      </srs>
+      <provider encoding="UTF-8">ogr</provider>
+      <renderer-v2 type="singleSymbol">
+        <symbol type="fill" name="0">
+          <layer class="SimpleFill">
+            <prop k="color" v="66,66,66,70"/>
+            <prop k="outline_color" v="198,40,40,255"/>
+            <prop k="outline_width" v="0.8"/>
+          </layer>
+        </symbol>
+      </renderer-v2>
+    </maplayer>
+
+    <!-- CAPA 3: ISÓCRONAS DE AVANCE DIARIO -->
+    <maplayer type="vector" geometry="Polygon" name="3. Isócronas de Expansión" id="layer_isocronas" readOnly="0">
+      <id>layer_isocronas</id>
+      <datasource>./3_isocronas_avance_fuego.geojson</datasource>
+      <keywordList><value></value></keywordList>
+      <layername>3. Isócronas de Expansión</layername>
+      <srs>
+        <spatialrefsys><authid>EPSG:4326</authid></spatialrefsys>
+      </srs>
+      <provider encoding="UTF-8">ogr</provider>
+      <temporal mode="FixedTemporalRange" enabled="1" startField="fecha_inicio_utc" endField="fecha_fin_utc">
+      </temporal>
+      <renderer-v2 type="singleSymbol">
+        <symbol type="fill" name="0">
+          <layer class="SimpleFill">
+            <prop k="color" v="255,87,34,90"/>
+            <prop k="outline_color" v="230,74,25,255"/>
+            <prop k="outline_style" v="dash"/>
+            <prop k="outline_width" v="0.5"/>
+          </layer>
+        </symbol>
+      </renderer-v2>
+    </maplayer>
+
+    <!-- CAPA 4 (DETALLE TÉCNICO RAW): PÍXELES INDIVIDUALES -->
+    <maplayer type="vector" geometry="Polygon" name="4. [Detalle RAW] Píxeles Satelitales Individuales" id="layer_pixeles_raw" readOnly="0">
+      <id>layer_pixeles_raw</id>
+      <datasource>./4_pixeles_individuales_satelitales.geojson</datasource>
+      <keywordList><value></value></keywordList>
+      <layername>4. [Detalle RAW] Píxeles Satelitales Individuales</layername>
+      <srs>
+        <spatialrefsys><authid>EPSG:4326</authid></spatialrefsys>
+      </srs>
+      <provider encoding="UTF-8">ogr</provider>
+      <renderer-v2 type="singleSymbol">
+        <symbol type="fill" name="0">
+          <layer class="SimpleFill">
+            <prop k="color" v="0,0,0,0"/>
+            <prop k="outline_color" v="255,167,38,180"/>
+            <prop k="outline_width" v="0.25"/>
+            <prop k="outline_style" v="dot"/>
+          </layer>
+        </symbol>
+      </renderer-v2>
+    </maplayer>
+
+    <!-- CAPA 5: DEMARCACIÓN GEOGRÁFICA Y DISTRITOS DE PARINACOCHAS -->
+    <maplayer type="vector" geometry="Polygon" name="5. 🗺️ Geografía y Distritos Parinacochas" id="layer_demarcacion" readOnly="0">
+      <id>layer_demarcacion</id>
+      <datasource>./5_demarcacion_distrital_parinacochas.geojson</datasource>
+      <keywordList><value></value></keywordList>
+      <layername>5. 🗺️ Geografía y Distritos Parinacochas</layername>
+      <srs>
+        <spatialrefsys><authid>EPSG:4326</authid></spatialrefsys>
+      </srs>
+      <provider encoding="UTF-8">ogr</provider>
+      <renderer-v2 type="singleSymbol">
+        <symbol type="fill" name="0">
+          <layer class="SimpleFill">
+            <prop k="color" v="33,150,243,35"/>
+            <prop k="outline_color" v="25,118,210,240"/>
+            <prop k="outline_width" v="0.6"/>
+            <prop k="outline_style" v="dash"/>
+          </layer>
+        </symbol>
+      </renderer-v2>
+    </maplayer>
+
+    <!-- MAPA BASE 1: GOOGLE SATELLITE (IMÁGENES SATELITALES HÍBRIDAS CON CALLES Y RELIEVE) -->
+    <maplayer type="raster" name="🛰️ Mapa Base: Google Satellite (Híbrido)" id="layer_basemap_google" autoRefreshEnabled="0" autoRefreshTime="0">
+      <id>layer_basemap_google</id>
+      <datasource>type=xyz&amp;url=https://mt1.google.com/vt/lyrs%3Dy%26x%3D%7Bx%7D%26y%3D%7By%7D%26z%3D%7Bz%7D&amp;zmax=20&amp;zmin=0</datasource>
+      <keywordList><value></value></keywordList>
+      <layername>🛰️ Mapa Base: Google Satellite (Híbrido)</layername>
+      <srs>
+        <spatialrefsys nativeFormat="Wkt">
+          <authid>EPSG:3857</authid>
+        </spatialrefsys>
+      </srs>
+      <provider>wms</provider>
+      <pipe>
+        <provider>
+          <resampling enabled="false" zoomedInResamplingMethod="nearestNeighbour" zoomedOutResamplingMethod="nearestNeighbour"/>
+        </provider>
+        <rasterrenderer type="singlebandcolordata" opacity="1" alphaBand="-1" band="1">
+          <rasterTransparency/>
+        </rasterrenderer>
+      </pipe>
+    </maplayer>
+
+    <!-- MAPA BASE 2: OPENSTREETMAP STANDARD -->
+    <maplayer type="raster" name="🌍 Mapa Base: OpenStreetMap Standard" id="layer_basemap_osm" autoRefreshEnabled="0" autoRefreshTime="0">
+      <id>layer_basemap_osm</id>
+      <datasource>type=xyz&amp;url=https://tile.openstreetmap.org/%7Bz%7D/%7Bx%7D/%7By%7D.png&amp;zmax=19&amp;zmin=0</datasource>
+      <keywordList><value></value></keywordList>
+      <layername>🌍 Mapa Base: OpenStreetMap Standard</layername>
+      <srs>
+        <spatialrefsys nativeFormat="Wkt">
+          <authid>EPSG:3857</authid>
+        </spatialrefsys>
+      </srs>
+      <provider>wms</provider>
+      <pipe>
+        <provider>
+          <resampling enabled="false" zoomedInResamplingMethod="nearestNeighbour" zoomedOutResamplingMethod="nearestNeighbour"/>
+        </provider>
+        <rasterrenderer type="singlebandcolordata" opacity="1" alphaBand="-1" band="1">
+          <rasterTransparency/>
+        </rasterrenderer>
+      </pipe>
+    </maplayer>
+  </projectLayers>
+
+  <layerorder>
+    <layer id="layer_basemap_osm"/>
+    <layer id="layer_basemap_google"/>
+    <layer id="layer_demarcacion"/>
+    <layer id="layer_cicatrices"/>
+    <layer id="layer_isocronas"/>
+    <layer id="layer_pixeles_raw"/>
+    <layer id="layer_rastros_fusionados"/>
+  </layerorder>
+
+  <!-- ÁRBOL DE CAPAS PARA EL PANEL DE QGIS Y RENDERIZADO VISIBLE EN EL LIENZO -->
+  <layer-tree-group>
+    <customproperties/>
+    <layer-tree-layer id="layer_rastros_fusionados" name="1. 🔥 Rastros Fuego Fusionados (VIIRS + MODIS)" source="./1_rastros_fuego_fusionados_dia.geojson" providerKey="ogr" checked="Qt::Checked" expanded="1"/>
+    <layer-tree-layer id="layer_cicatrices" name="2. Cicatrices Totales Consolidadas" source="./2_cicatrices_totales_incendios.geojson" providerKey="ogr" checked="Qt::Checked" expanded="1"/>
+    <layer-tree-layer id="layer_demarcacion" name="5. 🗺️ Geografía y Distritos Parinacochas" source="./5_demarcacion_distrital_parinacochas.geojson" providerKey="ogr" checked="Qt::Checked" expanded="1"/>
+    <layer-tree-layer id="layer_basemap_google" name="🛰️ Mapa Base: Google Satellite (Híbrido)" source="type=xyz&amp;url=https://mt1.google.com/vt/lyrs%3Dy%26x%3D%7Bx%7D%26y%3D%7By%7D%26z%3D%7Bz%7D&amp;zmax=20&amp;zmin=0" providerKey="wms" checked="Qt::Checked" expanded="0"/>
+    <layer-tree-layer id="layer_basemap_osm" name="🌍 Mapa Base: OpenStreetMap Standard" source="type=xyz&amp;url=https://tile.openstreetmap.org/%7Bz%7D/%7Bx%7D/%7By%7D.png&amp;zmax=19&amp;zmin=0" providerKey="wms" checked="Qt::Unchecked" expanded="0"/>
+    <layer-tree-layer id="layer_isocronas" name="3. Isócronas de Expansión" source="./3_isocronas_avance_fuego.geojson" providerKey="ogr" checked="Qt::Unchecked" expanded="0"/>
+    <layer-tree-layer id="layer_pixeles_raw" name="4. [Detalle RAW] Píxeles Satelitales Individuales" source="./4_pixeles_individuales_satelitales.geojson" providerKey="ogr" checked="Qt::Unchecked" expanded="0"/>
+  </layer-tree-group>
+</qgis>

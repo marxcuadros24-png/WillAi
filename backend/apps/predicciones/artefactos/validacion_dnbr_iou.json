@@ -1,0 +1,168 @@
+{
+  "titulo": "Reporte de Validación de Verdad Terreno (Sentinel-2 dNBR vs Simulador Elíptico Andino)",
+  "motor_simulacion": "SimuladorElipticoAndino (Dijkstra 8-vecindad + Multi-Ignición Cluster FIRMS + Sentinel-2 Pre-incendio NDMI/NDVI)",
+  "metodologia_verdad_terreno": "differenced Normalized Burn Ratio (dNBR = NBR_pre - NBR_post) con Sentinel-2 L2A",
+  "umbral_severidad_dnbr": 0.12,
+  "multiplicadores_calibracion": {
+    "alfa_r0": 0.463,
+    "alfa_viento": 0.842,
+    "alfa_pendiente": 0.842
+  },
+  "ensamble_viento": true,
+  "delta_viento_grados": 15.0,
+  "total_eventos_evaluados": 3,
+  "resumen_metricas_macro": {
+    "iou_medio_porcentaje": 34.33,
+    "dice_f1_medio_porcentaje": 50.68,
+    "distancia_hausdorff_media_m": 2163.3,
+    "error_comision_medio_porcentaje": 50.57,
+    "error_omision_medio_porcentaje": 40.18,
+    "calificacion_concordancia": "Regular (Requiere mayor densidad de modelos locales de combustible)"
+  },
+  "eventos": [
+    {
+      "id_evento": "FIRMS-2026-0820-HUACCANA",
+      "nombre": "Incendio Huac-Cana / Coracora Sur",
+      "distrito": "Coracora",
+      "fecha": "2026-08-20",
+      "coordenadas": {
+        "lat": -15.16314,
+        "lon": -73.76752
+      },
+      "focos_cluster_count": 4,
+      "frp_mw": 460.89,
+      "escenas_sentinel2": {
+        "pre": "S2C_18LXJ_20260819_0_L2A",
+        "post": "S2A_18LXJ_20260831_0_L2A"
+      },
+      "parametros_meteorologicos": {
+        "viento_kmh": 22.0,
+        "dir_viento_grados": 75.0,
+        "ffmc": 89.2,
+        "duracion_horas": 6
+      },
+      "multiplicadores_calibracion": {
+        "alfa_r0": 0.463,
+        "alfa_viento": 0.842,
+        "alfa_pendiente": 0.842
+      },
+      "ensamble_viento": true,
+      "estadisticas_dnbr": {
+        "dnbr_min": -0.11,
+        "dnbr_max": 0.654,
+        "dnbr_medio": 0.051,
+        "pixeles_quemados": 5681,
+        "pixeles_quemados_crudos": 5737,
+        "umbral_aplicado": 0.12,
+        "usando_combustible_pre_ndmi": true
+      },
+      "metricas_comparativas": {
+        "iou_porcentaje": 40.19,
+        "dice_f1_porcentaje": 57.33,
+        "distancia_hausdorff_m": 1286.0,
+        "comision_porcentaje": 56.6,
+        "omision_porcentaje": 15.55,
+        "area_interseccion_ha": 431.8,
+        "area_union_ha": 1074.53,
+        "area_simulada_ha": 995.04,
+        "area_real_ha": 511.29
+      }
+    },
+    {
+      "id_evento": "FIRMS-2026-1003-CHUMPI",
+      "nombre": "Incendio Chumpi / Incuyo",
+      "distrito": "Chumpi",
+      "fecha": "2026-10-03",
+      "coordenadas": {
+        "lat": -15.11034,
+        "lon": -73.71182
+      },
+      "focos_cluster_count": 4,
+      "frp_mw": 182.79,
+      "escenas_sentinel2": {
+        "pre": "S2A_18LXJ_20260930_0_L2A",
+        "post": "S2B_18LXJ_20261013_0_L2A"
+      },
+      "parametros_meteorologicos": {
+        "viento_kmh": 18.0,
+        "dir_viento_grados": 110.0,
+        "ffmc": 87.5,
+        "duracion_horas": 6
+      },
+      "multiplicadores_calibracion": {
+        "alfa_r0": 0.463,
+        "alfa_viento": 0.842,
+        "alfa_pendiente": 0.842
+      },
+      "ensamble_viento": true,
+      "estadisticas_dnbr": {
+        "dnbr_min": -0.261,
+        "dnbr_max": 0.679,
+        "dnbr_medio": 0.081,
+        "pixeles_quemados": 11620,
+        "pixeles_quemados_crudos": 11803,
+        "umbral_aplicado": 0.12,
+        "usando_combustible_pre_ndmi": true
+      },
+      "metricas_comparativas": {
+        "iou_porcentaje": 38.39,
+        "dice_f1_porcentaje": 55.49,
+        "distancia_hausdorff_m": 2939.7,
+        "comision_porcentaje": 27.32,
+        "omision_porcentaje": 55.13,
+        "area_interseccion_ha": 469.06,
+        "area_union_ha": 1221.68,
+        "area_simulada_ha": 645.39,
+        "area_real_ha": 1045.35
+      }
+    },
+    {
+      "id_evento": "FIRMS-2026-1011-UPAHUACHO",
+      "nombre": "Incendio Upahuacho / Parinacochas Norte",
+      "distrito": "Upahuacho",
+      "fecha": "2026-10-11",
+      "coordenadas": {
+        "lat": -14.92584,
+        "lon": -73.86101
+      },
+      "focos_cluster_count": 2,
+      "frp_mw": 206.34,
+      "escenas_sentinel2": {
+        "pre": "S2A_18LXJ_20261010_1_L2A",
+        "post": "S2C_18LXJ_20261018_0_L2A"
+      },
+      "parametros_meteorologicos": {
+        "viento_kmh": 24.0,
+        "dir_viento_grados": 60.0,
+        "ffmc": 90.1,
+        "duracion_horas": 6
+      },
+      "multiplicadores_calibracion": {
+        "alfa_r0": 0.463,
+        "alfa_viento": 0.842,
+        "alfa_pendiente": 0.842
+      },
+      "ensamble_viento": true,
+      "estadisticas_dnbr": {
+        "dnbr_min": -0.936,
+        "dnbr_max": 0.546,
+        "dnbr_medio": -0.002,
+        "pixeles_quemados": 2473,
+        "pixeles_quemados_crudos": 2501,
+        "umbral_aplicado": 0.12,
+        "usando_combustible_pre_ndmi": true
+      },
+      "metricas_comparativas": {
+        "iou_porcentaje": 24.41,
+        "dice_f1_porcentaje": 39.23,
+        "distancia_hausdorff_m": 2264.3,
+        "comision_porcentaje": 67.78,
+        "omision_porcentaje": 49.85,
+        "area_interseccion_ha": 110.03,
+        "area_union_ha": 450.85,
+        "area_simulada_ha": 341.46,
+        "area_real_ha": 219.42
+      }
+    }
+  ]
+}

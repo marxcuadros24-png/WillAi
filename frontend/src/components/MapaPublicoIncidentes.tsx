@@ -1,0 +1,509 @@
+import React, { useEffect, useRef, useState } from 'react';
+import L from 'leaflet';
+import type { IncidentePublico } from '../types';
+import {
+  LIMITE_PROVINCIAL_PARINACOCHAS,
+  LIMITES_DISTRITALES_PARINACOCHAS,
+} from '../data/demarcacionParinacochas';
+import { Compass, Globe, Map as MapIcon, Flame, RefreshCw, CheckCircle2 } from 'lucide-react';
+
+interface MapaPublicoIncidentesProps {
+  incidentes: IncidentePublico[];
+  selectedIncidenteId: number | null;
+  onSelectIncidente: (incidente: IncidentePublico) => void;
+  centerCoords?: [number, number] | null;
+  filtroEstado?: 'activos' | 'todos';
+  onToggleFiltroEstado?: (filtro: 'activos' | 'todos') => void;
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
+  ultimaActualizacion?: Date | null;
+}
+
+export const MapaPublicoIncidentes: React.FC<MapaPublicoIncidentesProps> = ({
+  incidentes,
+  selectedIncidenteId,
+  onSelectIncidente,
+  centerCoords = null,
+  filtroEstado = 'activos',
+  onToggleFiltroEstado,
+  onRefresh,
+  isRefreshing = false,
+  ultimaActualizacion = null,
+}) => {
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  const mapInstanceRef = useRef<L.Map | null>(null);
+  const markersLayerRef = useRef<L.LayerGroup | null>(null);
+  const markerMapRef = useRef<Map<number, L.Marker>>(new Map());
+  const satelliteLayerRef = useRef<L.TileLayer | null>(null);
+  const streetLayerRef = useRef<L.TileLayer | null>(null);
+  const labelsLayerRef = useRef<L.TileLayer | null>(null);
+
+  const [mapType, setMapType] = useState<'satelite' | 'calles'>('satelite');
+
+  const isActivo = (estado: string) =>
+    ['nuevo', 'verificacion', 'confirmado', 'asignado', 'en_atencion', 'en_combate'].includes(estado);
+
+  const conteoActivos = incidentes.filter((i) => isActivo(i.estado)).length;
+  const conteoCerrados = incidentes.filter((i) => ['extinguido', 'cerrado'].includes(i.estado)).length;
+
+  // 1. Inicialización de Leaflet
+  useEffect(() => {
+    if (!mapContainerRef.current || mapInstanceRef.current) return;
+
+    const CORACORA_COORDS: [number, number] = [-15.0189, -73.7806];
+
+    const map = L.map(mapContainerRef.current, {
+      center: CORACORA_COORDS,
+      zoom: 11,
+      zoomControl: false,
+      attributionControl: true,
+    });
+
+    L.control.zoom({ position: 'topright' }).addTo(map);
+
+    // 1. Capa Satelital Esri World Imagery
+    const satLayer = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      {
+        attribution: 'Tiles &copy; Esri &mdash; WillAI Satelital Parinacochas',
+        maxZoom: 18,
+      }
+    );
+
+    // 2. Capa Callejera / Topográfica OpenStreetMap
+    const osmLayer = L.tileLayer(
+      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        maxZoom: 19,
+      }
+    );
+
+    // 3. Capa de Etiquetas Voyager
+    const labelsLayer = L.tileLayer(
+      'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png',
+      {
+        attribution: '&copy; CartoDB',
+        maxZoom: 18,
+        opacity: 0.9,
+      }
+    );
+
+    // Activar satélite por defecto
+    satLayer.addTo(map);
+    labelsLayer.addTo(map);
+
+    satelliteLayerRef.current = satLayer;
+    streetLayerRef.current = osmLayer;
+    labelsLayerRef.current = labelsLayer;
+
+    // Límites distritales de Parinacochas
+    if (LIMITES_DISTRITALES_PARINACOCHAS) {
+      L.geoJSON(LIMITES_DISTRITALES_PARINACOCHAS as any, {
+        interactive: false,
+        style: {
+          color: '#38bdf8',
+          weight: 1.2,
+          dashArray: '4, 4',
+          fillColor: 'transparent',
+        },
+      }).addTo(map);
+    }
+
+    // Límite provincial de Parinacochas
+    if (LIMITE_PROVINCIAL_PARINACOCHAS) {
+      L.geoJSON(LIMITE_PROVINCIAL_PARINACOCHAS as any, {
+        interactive: false,
+        style: {
+          color: '#f59e0b',
+          weight: 2.2,
+          fillColor: 'rgba(245, 158, 11, 0.05)',
+          fillOpacity: 0.1,
+        },
+      }).addTo(map);
+    }
+
+    const markersGroup = L.layerGroup().addTo(map);
+    markersLayerRef.current = markersGroup;
+    mapInstanceRef.current = map;
+
+    // Observador de Redimensionamiento
+    const resizeObserver = new ResizeObserver(() => {
+      map.invalidateSize();
+    });
+    resizeObserver.observe(mapContainerRef.current);
+
+    const t1 = setTimeout(() => map.invalidateSize(), 150);
+    const t2 = setTimeout(() => map.invalidateSize(), 500);
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      resizeObserver.disconnect();
+      map.remove();
+      mapInstanceRef.current = null;
+    };
+  }, []);
+
+  // 2. Centrado cuando cambia el distrito o coordenadas seleccionadas
+  useEffect(() => {
+    if (!centerCoords || !mapInstanceRef.current) return;
+    mapInstanceRef.current.flyTo(centerCoords, 12, {
+      duration: 1.2,
+      easeLinearity: 0.25,
+    });
+  }, [centerCoords]);
+
+  // Alternar entre satelital y callejero
+  const handleToggleMapType = () => {
+    const map = mapInstanceRef.current;
+    if (!map || !satelliteLayerRef.current || !streetLayerRef.current || !labelsLayerRef.current) return;
+
+    if (mapType === 'satelite') {
+      map.removeLayer(satelliteLayerRef.current);
+      map.removeLayer(labelsLayerRef.current);
+      streetLayerRef.current.addTo(map);
+      setMapType('calles');
+    } else {
+      map.removeLayer(streetLayerRef.current);
+      satelliteLayerRef.current.addTo(map);
+      labelsLayerRef.current.addTo(map);
+      setMapType('satelite');
+    }
+  };
+
+  // Icono SVG para incidentes
+  const createMarkerIcon = (inc: IncidentePublico, isSelected: boolean) => {
+    const isActivo = ['nuevo', 'verificacion', 'confirmado', 'asignado', 'en_atencion', 'en_combate'].includes(inc.estado);
+    const isControlado = ['contenido', 'controlado'].includes(inc.estado);
+
+    let color = '#10b981'; // Extinguido
+    let pulseHtml = '';
+
+    if (isActivo) {
+      color = '#ef4444'; // Activo
+      pulseHtml = `<span style="position:absolute;inset:-6px;border-radius:50%;background:rgba(239,68,68,0.5);animation:ping 2s cubic-bezier(0,0,0.2,1) infinite;"></span>`;
+    } else if (isControlado) {
+      color = '#f59e0b'; // Controlado
+    }
+
+    const scale = isSelected ? 'scale(1.3)' : 'scale(1)';
+    const borderWidth = isSelected ? '3px' : '2px';
+    const borderColor = isSelected ? '#38bdf8' : '#ffffff';
+
+    return L.divIcon({
+      className: 'custom-public-marker',
+      iconSize: [36, 36],
+      iconAnchor: [18, 18],
+      popupAnchor: [0, -20],
+      html: `
+        <div style="position:relative;width:36px;height:36px;display:flex;align-items:center;justify-content:center;transition:transform 0.2s ease;transform:${scale};cursor:pointer;">
+          ${pulseHtml}
+          <div style="position:relative;width:28px;height:28px;border-radius:50%;background:${color};border:${borderWidth} solid ${borderColor};display:flex;align-items:center;justify-content:center;box-shadow:0 0 16px ${isSelected ? '#38bdf8' : color};">
+            ${
+              isActivo
+                ? `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3.5z"/></svg>`
+                : isControlado
+                ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-8 9-8 9s-8-4-8-9V5l8-3 8 3z"/></svg>`
+                : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>`
+            }
+          </div>
+        </div>
+      `,
+    });
+  };
+
+  // Renderizar incidentes
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    const markersGroup = markersLayerRef.current;
+    if (!map || !markersGroup) return;
+
+    markersGroup.clearLayers();
+    markerMapRef.current.clear();
+
+    const validIncidents = incidentes.filter(
+      (inc) => typeof inc.latitud === 'number' && typeof inc.longitud === 'number' && !isNaN(inc.latitud) && !isNaN(inc.longitud)
+    );
+
+    // Filtrar estrictamente: por defecto solo incidentes activos en combate o verificación
+    const incidentesAMostrar = filtroEstado === 'todos'
+      ? validIncidents
+      : validIncidents.filter((inc) => isActivo(inc.estado));
+
+    incidentesAMostrar.forEach((inc) => {
+      const isSelected = inc.id === selectedIncidenteId;
+      const icon = createMarkerIcon(inc, isSelected);
+
+      const marker = L.marker([inc.latitud, inc.longitud], { icon });
+
+      const fotoHtml =
+        inc.fotografias && inc.fotografias.length > 0
+          ? `<div style="margin-bottom:8px;border-radius:6px;overflow:hidden;max-height:120px;">
+               <img src="${inc.fotografias[0]}" alt="${inc.titulo}" style="width:100%;height:120px;object-fit:cover;" />
+             </div>`
+          : '';
+
+      const estadoColor = ['nuevo', 'verificacion', 'confirmado', 'asignado', 'en_atencion', 'en_combate'].includes(inc.estado)
+        ? '#ef4444'
+        : ['contenido', 'controlado'].includes(inc.estado)
+        ? '#f59e0b'
+        : '#10b981';
+
+      const popupContent = `
+        <div style="font-family:sans-serif;color:#f8fafc;background:#0f172a;padding:12px;border-radius:8px;max-width:260px;font-size:12px;line-height:1.4;">
+          ${fotoHtml}
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;gap:6px;">
+            <span style="font-weight:700;font-size:11px;color:#94a3b8;font-family:monospace;">${inc.codigo}</span>
+            <span style="background:${estadoColor}25;color:${estadoColor};border:1px solid ${estadoColor}66;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;text-transform:uppercase;">
+              ${inc.estado_display}
+            </span>
+          </div>
+          <h4 style="margin:0 0 6px 0;font-size:13px;font-weight:700;color:#f8fafc;">${inc.titulo}</h4>
+          <p style="margin:0 0 4px 0;color:#cbd5e1;font-size:11px;">
+            <strong>Sector:</strong> ${inc.comunidad_nombre} (${inc.distrito_nombre})
+          </p>
+          <p style="margin:0 0 6px 0;color:#94a3b8;font-size:11px;">
+            <strong>Fecha:</strong> ${inc.fecha_display}
+          </p>
+          <div style="padding-top:6px;border-top:1px solid rgba(255,255,255,0.1);font-size:11px;color:#94a3b8;">
+            <strong>Reportante:</strong> <span style="color:${inc.identidad_autorizada ? '#38bdf8' : '#94a3b8'};">${inc.reportado_por}</span>
+          </div>
+        </div>
+      `;
+
+      marker.bindPopup(popupContent, {
+        className: 'public-incident-popup',
+        maxWidth: 280,
+      });
+
+      marker.on('click', () => {
+        onSelectIncidente(inc);
+      });
+
+      marker.addTo(markersGroup);
+      markerMapRef.current.set(inc.id, marker);
+    });
+  }, [incidentes, selectedIncidenteId, filtroEstado]);
+
+  // Centrar y abrir popup cuando se selecciona un incidente
+  useEffect(() => {
+    if (!selectedIncidenteId) return;
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    const inc = incidentes.find((i) => i.id === selectedIncidenteId);
+    if (!inc) return;
+
+    map.flyTo([inc.latitud, inc.longitud], 13, {
+      duration: 1.0,
+      easeLinearity: 0.25,
+    });
+
+    const marker = markerMapRef.current.get(selectedIncidenteId);
+    if (marker) {
+      setTimeout(() => {
+        marker.openPopup();
+      }, 400);
+    }
+  }, [selectedIncidenteId, incidentes]);
+
+  const handleResetView = () => {
+    if (!mapInstanceRef.current) return;
+    mapInstanceRef.current.flyTo([-15.0189, -73.7806], 11, { duration: 1 });
+  };
+
+  const btnStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '7px 12px',
+    borderRadius: '8px',
+    background: 'rgba(14, 29, 60, 0.92)',
+    backdropFilter: 'blur(8px)',
+    border: '1px solid rgba(96, 165, 250, 0.3)',
+    color: '#f8fafc',
+    fontSize: '11.5px',
+    fontWeight: 700,
+    boxShadow: '0 4px 14px rgba(0,0,0,0.5)',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+  };
+
+  return (
+    <div style={{ position: 'relative', width: '100%', height: '100%', background: '#081224', overflow: 'hidden' }}>
+      {/* Contenedor Leaflet */}
+      <div
+        id="leaflet-map-publico"
+        ref={mapContainerRef}
+        style={{
+          width: '100%',
+          height: '100%',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: '#081224',
+          zIndex: 1
+        }}
+      />
+
+      {/* Botones de control flotantes en esquina superior izquierda */}
+      <div style={{ position: 'absolute', top: '14px', left: '14px', zIndex: 400, display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+        <button
+          onClick={handleResetView}
+          style={btnStyle}
+          title="Centrar en Parinacochas"
+        >
+          <Compass size={14} color="#fbbf24" />
+          <span>Provincia</span>
+        </button>
+
+        <button
+          onClick={handleToggleMapType}
+          style={btnStyle}
+          title="Alternar vista Satelital / Callejera"
+        >
+          {mapType === 'satelite' ? <Globe size={14} color="#38bdf8" /> : <MapIcon size={14} color="#34d399" />}
+          <span>{mapType === 'satelite' ? 'Satélite' : 'Callejero'}</span>
+        </button>
+
+        {/* Toggle Filtro Activos / Historial */}
+        <button
+          onClick={() => onToggleFiltroEstado?.(filtroEstado === 'activos' ? 'todos' : 'activos')}
+          style={{
+            ...btnStyle,
+            background: filtroEstado === 'activos' ? 'rgba(220, 38, 38, 0.92)' : 'rgba(14, 29, 60, 0.92)',
+            border: filtroEstado === 'activos' ? '1px solid #ef4444' : '1px solid rgba(96, 165, 250, 0.3)',
+            boxShadow: filtroEstado === 'activos' ? '0 0 14px rgba(239, 68, 68, 0.4)' : '0 4px 14px rgba(0,0,0,0.5)',
+          }}
+          title={filtroEstado === 'activos' ? "Mostrando solo activos. Click para ver historial." : "Mostrando historial. Click para ver solo activos."}
+        >
+          <Flame size={14} color={filtroEstado === 'activos' ? '#ffffff' : '#ef4444'} />
+          <span>{filtroEstado === 'activos' ? `Solo Activos (${conteoActivos})` : `Todos (${incidentes.length})`}</span>
+        </button>
+
+        {/* Botón Refrescar en Vivo */}
+        {onRefresh && (
+          <button
+            onClick={onRefresh}
+            disabled={isRefreshing}
+            style={{
+              ...btnStyle,
+              cursor: isRefreshing ? 'wait' : 'pointer',
+            }}
+            title="Actualizar datos en tiempo real de satélite y reportes móviles"
+          >
+            <RefreshCw
+              size={13}
+              color="#38bdf8"
+              style={{
+                animation: isRefreshing ? 'spin 1s linear infinite' : 'none',
+              }}
+            />
+            <span>{isRefreshing ? 'Actualizando...' : 'Refrescar'}</span>
+          </button>
+        )}
+
+        {/* Indicador de monitoreo en tiempo real */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '7px 11px',
+            borderRadius: '8px',
+            background: 'rgba(10, 20, 40, 0.88)',
+            backdropFilter: 'blur(8px)',
+            border: '1px solid rgba(56, 189, 248, 0.25)',
+            color: '#93c5fd',
+            fontSize: '11px',
+            fontWeight: 600,
+            boxShadow: '0 4px 14px rgba(0,0,0,0.4)',
+          }}
+        >
+          <span
+            style={{
+              width: '7px',
+              height: '7px',
+              borderRadius: '50%',
+              background: isRefreshing ? '#38bdf8' : '#10b981',
+              boxShadow: isRefreshing ? '0 0 8px #38bdf8' : '0 0 8px #10b981',
+            }}
+          />
+          <span>
+            {isRefreshing
+              ? 'Sincronizando...'
+              : ultimaActualizacion
+              ? `En vivo (${ultimaActualizacion.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', second: '2-digit' })})`
+              : 'En vivo (auto 10s)'}
+          </span>
+        </div>
+      </div>
+
+      {/* Banner flotante si no hay incendios activos */}
+      {filtroEstado === 'activos' && conteoActivos === 0 && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '24px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 400,
+            background: 'rgba(6, 78, 59, 0.92)',
+            backdropFilter: 'blur(8px)',
+            border: '1px solid #10b981',
+            borderRadius: '10px',
+            padding: '10px 18px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            color: '#ffffff',
+            fontSize: '12px',
+            fontWeight: 700,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
+          }}
+        >
+          <CheckCircle2 size={18} color="#34d399" />
+          <span>Sin incendios activos reportados en este momento en Parinacochas</span>
+        </div>
+      )}
+
+      {/* Leyenda cartográfica flotante estilo SENAMHI en esquina inferior derecha */}
+      <div className="obs-floating-legend">
+        <div className="obs-legend-title">
+          <span>Nivel de Peligro FWI</span>
+        </div>
+        <div className="obs-legend-row">
+          <span className="obs-legend-color-dot" style={{ background: '#eab308' }}></span>
+          <span>Moderada (FWI 5-11)</span>
+        </div>
+        <div className="obs-legend-row">
+          <span className="obs-legend-color-dot" style={{ background: '#f97316' }}></span>
+          <span>Fuerte / Alta (FWI 11-21)</span>
+        </div>
+        <div className="obs-legend-row">
+          <span className="obs-legend-color-dot" style={{ background: '#dc2626' }}></span>
+          <span>Extrema (FWI &gt; 21)</span>
+        </div>
+
+        <div style={{ margin: '8px 0 6px 0', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '6px' }}>
+          <div className="obs-legend-title">
+            <span>{filtroEstado === 'activos' ? 'Fuegos Activos' : 'Incidentes'}</span>
+          </div>
+          <div className="obs-legend-row">
+            <span className="obs-legend-color-dot" style={{ background: '#ef4444', border: '1.5px solid #ffffff', boxShadow: '0 0 6px #ef4444' }}></span>
+            <span>Activos en Terreno ({conteoActivos})</span>
+          </div>
+          {filtroEstado === 'todos' && (
+            <div className="obs-legend-row">
+              <span className="obs-legend-color-dot" style={{ background: '#10b981', border: '1.5px solid #ffffff' }}></span>
+              <span>Extinguidos / Cerrados ({conteoCerrados})</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};

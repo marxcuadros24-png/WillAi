@@ -1,0 +1,46 @@
+===========================================================================
+  WILLAI - MAPA DE INCENDIOS SATELITALES FUSIONADOS (QGIS & GOOGLE EARTH)
+  Provincia de Parinacochas, Ayacucho, Perú
+===========================================================================
+
+RESUMEN DE LA FUSIÓN MULTI-SENSOR:
+----------------------------------
+- Detecciones satelitales procesadas: 684 focos reales (NASA FIRMS: VIIRS + MODIS)
+- Rastros de fuego fusionados por día: 246 frentes consolidados
+- Rastros con coincidencia Multi-Sensor (VIIRS + MODIS): 6 eventos confirmados
+- Cicatrices totales consolidadas: 237 áreas quemadas
+- Umbral de proximidad de rastro: 1200.0 metros
+
+¿POR QUÉ ESTÁN FUSIONADOS?:
+--------------------------
+Anteriormente, cuando MODIS (1km) y VIIRS (375m) sobrevolaban la misma zona el mismo día,
+se generaban múltiples rectángulos solapados que saturaban el mapa y duplicaban el área.
+Con la Fusión Espacio-Temporal:
+1. Todos los focos del mismo día y rastro continuo se unen geométricamente (unary_union).
+2. Se eliminan las áreas duplicadas entre sensores.
+3. Se calcula el área neta real en hectáreas sobre UTM Zona 18S.
+4. Se consolidan métricas clave: FRP total, temperatura máxima y satélites intervinientes.
+
+CAPAS EN ESTA CARPETA:
+---------------------
+1. proyecto_qgis_parinacochas.qgs
+   -> Proyecto listo para QGIS. Haz doble clic para abrir directamente.
+2. 1_rastros_fuego_fusionados_dia.geojson
+   -> CAPA PRINCIPAL: Rastros limpios fusionados por día.
+3. 2_cicatrices_totales_incendios.geojson
+   -> Perímetros finales acumulados de cada incendio.
+4. 3_isocronas_avance_fuego.geojson
+   -> Isócronas de expansión del fuego día a día.
+5. 4_pixeles_individuales_satelitales.geojson
+   -> Detalle RAW de cada píxel individual (apagada por defecto).
+6. 5_demarcacion_distrital_parinacochas.geojson
+   -> Límites distritales y comunidades campesinas.
+7. mapa_incendios_parinacochas.kmz
+   -> Google Earth con los rastros fusionados y extrusión 3D por FRP.
+
+CONTROLADOR TEMPORAL EN QGIS:
+----------------------------
+1. Abre 'proyecto_qgis_parinacochas.qgs' en QGIS.
+2. En la barra superior, haz clic en el reloj 'Controlador Temporal'.
+3. Presiona el botón 'Play' (▶) para ver el fuego avanzar día a día.
+===========================================================================

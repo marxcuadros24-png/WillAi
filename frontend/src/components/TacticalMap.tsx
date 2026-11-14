@@ -1,0 +1,2004 @@
+import React, { useEffect, useRef, useState } from 'react';
+import L from 'leaflet';
+import {
+  Calendar,
+  Check,
+  ShieldAlert,
+  MapPin,
+  Flame,
+  Route,
+  Droplets,
+  Layers,
+  ChevronDown,
+  ChevronUp,
+  Crosshair,
+  Compass,
+  Home,
+  Shield,
+  Landmark,
+  Radio,
+  X
+} from 'lucide-react';
+import type { Incidente, FocoCalor, Brigada, ViviendaRural, GrillaRiesgoOcurrenciaData, RastrosFusionadosGeoJSON } from '../types';
+import { getMediaUrl, API_BASE } from '../services/api';
+import {
+  LIMITE_PROVINCIAL_PARINACOCHAS,
+  LIMITES_DISTRITALES_PARINACOCHAS,
+  REFERENCIAS_PROVINCIAS_LIMITROFES,
+} from '../data/demarcacionParinacochas';
+
+// Iconos vectoriales puros SVG para popups y tooltips de Leaflet (cero emojis)
+const SVG_ICONS = {
+  fire: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;margin-right:4px;"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3.5z"/></svg>',
+  home: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;margin-right:4px;"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
+  pin: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;margin-right:4px;"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>',
+  shield: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;margin-right:4px;"><path d="M20 13c0 5-8 9-8 9s-8-4-8-9V5l8-3 8 3z"/></svg>',
+  satellite: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;margin-right:4px;"><path d="M13 7 9 3 5 7l4 4"/><path d="m17 11 4 4-4 4-4-4"/><path d="m8 12 4 4 6-6-4-4Z"/><path d="m16 8 3-3"/><path d="M9 21a6 6 0 0 0-6-6"/></svg>',
+  droplet: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;margin-right:4px;"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/></svg>',
+  route: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;margin-right:4px;"><circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/></svg>',
+  play: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;margin-right:4px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>',
+  phone: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;margin-right:4px;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
+  clock: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;margin-right:4px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+  area: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fb923c" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;margin-right:4px;"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>',
+  calendar: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;margin-right:4px;"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'
+};
+
+// Función auxiliar para calcular duración precisa de incendio a partir de fechas UTC
+function formatearDuracionIncendio(inicioUtc?: string, finUtc?: string, ventanaUtc?: string): string {
+  if (!inicioUtc || !finUtc) return ventanaUtc || 'Duración no registrada';
+  try {
+    const t1 = new Date(inicioUtc).getTime();
+    const t2 = new Date(finUtc).getTime();
+    if (isNaN(t1) || isNaN(t2)) return ventanaUtc || 'Duración no registrada';
+    const diffMs = Math.max(0, t2 - t1);
+    if (diffMs === 0) {
+      const hora = inicioUtc.substring(11, 16);
+      return `Paso orbital único (~15 min) • ${hora} UTC`;
+    }
+    const totalMin = Math.round(diffMs / (1000 * 60));
+    const horas = Math.floor(totalMin / 60);
+    const mins = totalMin % 60;
+    if (horas === 0) {
+      return `${mins} min`;
+    } else if (mins === 0) {
+      return `${horas} horas`;
+    } else {
+      return `${horas}h ${mins}m`;
+    }
+  } catch {
+    return ventanaUtc || 'Duración no registrada';
+  }
+}
+
+// Cache a nivel de módulo para evitar re-descargas innecesarias
+let cachedCarreterasGeoJson: any = null;
+let cachedRiosGeoJson: any = null;
+
+interface TacticalMapProps {
+  incidentes: Incidente[];
+  focos: FocoCalor[];
+  brigadas: Brigada[];
+  viviendas?: ViviendaRural[];
+  onSelectIncidente: (incidente: Incidente) => void;
+  // Sensor layer states
+  showModis: boolean;
+  showViirs: boolean;
+  showSerfor: boolean;
+  showRastrosFusionados?: boolean;
+  onToggleRastrosFusionados?: (val: boolean) => void;
+  rastrosFusionados?: RastrosFusionadosGeoJSON | null;
+  showRiesgoOcurrencia?: boolean;
+  showIncidentes: boolean;
+  showBrigadas: boolean;
+  showViviendas?: boolean;
+  showLimiteProvincial?: boolean;
+  showDistritos?: boolean;
+  showCarreteras?: boolean;
+  showRios?: boolean;
+  onToggleModis: (val: boolean) => void;
+  onToggleViirs: (val: boolean) => void;
+  onToggleSerfor: (val: boolean) => void;
+  onToggleRiesgoOcurrencia?: (val: boolean) => void;
+  onToggleIncidentes: (val: boolean) => void;
+  onToggleBrigadas: (val: boolean) => void;
+  onToggleViviendas?: (val: boolean) => void;
+  onToggleLimiteProvincial?: (val: boolean) => void;
+  onToggleDistritos?: (val: boolean) => void;
+  onToggleCarreteras?: (val: boolean) => void;
+  onToggleRios?: (val: boolean) => void;
+  grillaOcurrencia?: GrillaRiesgoOcurrenciaData | null;
+  // Simulación de Propagación de Incendios (Cell2Fire Eliptico Andino)
+  simulacionGeojson?: any | null;
+  showSimulacionIsocronas?: boolean;
+  onToggleSimulacionIsocronas?: (val: boolean) => void;
+  // Timeline filter states
+  timeRange: 'today' | '24h' | '7d' | '30d' | '3m' | '6m' | 'custom';
+  onChangeTimeRange: (val: 'today' | '24h' | '7d' | '30d' | '3m' | '6m' | 'custom') => void;
+  fechaDesde?: string;
+  fechaHasta?: string;
+  onApplyCustomDates?: (desde: string, hasta: string) => void;
+  selectedIncidente?: Incidente | null;
+  focusCoords?: [number, number] | null;
+  onMapCreateIncident?: (lat: number, lon: number) => void;
+  onMapCreateVivienda?: (lat: number, lon: number) => void;
+  onMapSetSimCoords?: (lat: number, lon: number) => void;
+}
+
+export const TacticalMap: React.FC<TacticalMapProps> = ({
+  incidentes,
+  focos,
+  brigadas,
+  viviendas = [],
+  onSelectIncidente,
+  showModis,
+  showViirs,
+  showSerfor,
+  showRastrosFusionados = true,
+  onToggleRastrosFusionados,
+  rastrosFusionados = null,
+  showRiesgoOcurrencia = true,
+  showIncidentes,
+  showBrigadas,
+  showViviendas = true,
+  showLimiteProvincial = true,
+  showDistritos = false,
+  showCarreteras = true,
+  showRios = true,
+  simulacionGeojson = null,
+  showSimulacionIsocronas = true,
+  onToggleSimulacionIsocronas,
+  onToggleModis,
+  onToggleViirs,
+  onToggleSerfor,
+  onToggleRiesgoOcurrencia,
+  onToggleIncidentes,
+  onToggleBrigadas,
+  onToggleViviendas,
+  onToggleLimiteProvincial,
+  onToggleDistritos,
+  onToggleCarreteras,
+  onToggleRios,
+  grillaOcurrencia = null,
+  timeRange,
+  onChangeTimeRange,
+  fechaDesde,
+  fechaHasta,
+  onApplyCustomDates,
+  selectedIncidente = null,
+  focusCoords = null,
+  onMapCreateIncident,
+  onMapCreateVivienda,
+  onMapSetSimCoords
+}) => {
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  const mapInstanceRef = useRef<L.Map | null>(null);
+  const onMapCreateIncidentRef = useRef(onMapCreateIncident);
+  const onMapCreateViviendaRef = useRef(onMapCreateVivienda);
+  const onMapSetSimCoordsRef = useRef(onMapSetSimCoords);
+
+  useEffect(() => {
+    onMapCreateIncidentRef.current = onMapCreateIncident;
+    onMapCreateViviendaRef.current = onMapCreateVivienda;
+    onMapSetSimCoordsRef.current = onMapSetSimCoords;
+    (window as any).__willai_create_incident = (lat: number, lon: number) => {
+      onMapCreateIncidentRef.current?.(lat, lon);
+    };
+    (window as any).__willai_create_vivienda = (lat: number, lon: number) => {
+      onMapCreateViviendaRef.current?.(lat, lon);
+    };
+    (window as any).__willai_set_sim_coords = (lat: number, lon: number) => {
+      onMapSetSimCoordsRef.current?.(lat, lon);
+    };
+    return () => {
+      delete (window as any).__willai_create_incident;
+      delete (window as any).__willai_create_vivienda;
+      delete (window as any).__willai_set_sim_coords;
+    };
+  }, [onMapCreateIncident, onMapCreateVivienda, onMapSetSimCoords]);
+
+  const [isDateModalOpen, setIsDateModalOpen] = useState(false);
+  const [inputDesde, setInputDesde] = useState(fechaDesde || '2026-05-01');
+  const [inputHasta, setInputHasta] = useState(fechaHasta || '2026-10-22');
+
+  const [isLayersOpen, setIsLayersOpen] = useState(false);
+  const layersDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (layersDropdownRef.current && !layersDropdownRef.current.contains(e.target as Node)) {
+        setIsLayersOpen(false);
+      }
+    };
+    if (isLayersOpen) {
+      document.addEventListener('mousedown', handleOutsideClick);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+    };
+  }, [isLayersOpen]);
+
+  const layersRef = useRef<{
+    limiteProvincial: L.LayerGroup;
+    distritos: L.LayerGroup;
+    rios: L.LayerGroup;
+    carreteras: L.LayerGroup;
+    modis: L.LayerGroup;
+    viirs: L.LayerGroup;
+    serfor: L.LayerGroup;
+    rastrosFusionados: L.LayerGroup;
+    riesgoOcurrencia: L.LayerGroup;
+    isocronasSimulacion: L.LayerGroup;
+    incidentes: L.LayerGroup;
+    brigadas: L.LayerGroup;
+    viviendas: L.LayerGroup;
+  }>({
+    limiteProvincial: L.layerGroup(),
+    distritos: L.layerGroup(),
+    rios: L.layerGroup(),
+    carreteras: L.layerGroup(),
+    modis: L.layerGroup(),
+    viirs: L.layerGroup(),
+    serfor: L.layerGroup(),
+    rastrosFusionados: L.layerGroup(),
+    riesgoOcurrencia: L.layerGroup(),
+    isocronasSimulacion: L.layerGroup(),
+    incidentes: L.layerGroup(),
+    brigadas: L.layerGroup(),
+    viviendas: L.layerGroup(),
+  });
+
+  const CORACORA_COORDS: [number, number] = [-15.0189, -73.7806];
+
+  // Initialize Map with ESRI Satellite Base Layer
+  useEffect(() => {
+    if (!mapContainerRef.current || mapInstanceRef.current) return;
+
+    const map = L.map(mapContainerRef.current, {
+      center: CORACORA_COORDS,
+      zoom: 12,
+      zoomControl: false,
+    });
+
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+    // ESRI Satellite Base Layer
+    L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      {
+        attribution: 'Tiles &copy; Esri &mdash; WillAI NASA FIRMS & Sentinel Coracora',
+        maxZoom: 18,
+      }
+    ).addTo(map);
+
+    // Subtle dark labels layer
+    L.tileLayer(
+      'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png',
+      {
+        attribution: '&copy; CartoDB',
+        maxZoom: 18,
+        opacity: 0.85,
+      }
+    ).addTo(map);
+
+    // Attach layers (boundaries & base geography underneath overlays and markers)
+    layersRef.current.limiteProvincial.addTo(map);
+    layersRef.current.distritos.addTo(map);
+    layersRef.current.rios.addTo(map);
+    layersRef.current.carreteras.addTo(map);
+    layersRef.current.modis.addTo(map);
+    layersRef.current.viirs.addTo(map);
+    layersRef.current.serfor.addTo(map);
+    layersRef.current.rastrosFusionados.addTo(map);
+    layersRef.current.riesgoOcurrencia.addTo(map);
+    layersRef.current.isocronasSimulacion.addTo(map);
+    layersRef.current.incidentes.addTo(map);
+    layersRef.current.brigadas.addTo(map);
+    layersRef.current.viviendas.addTo(map);
+
+    // Contextmenu (clic derecho) para crear incidente en coordenadas exactas del mapa
+    map.on('contextmenu', (e: L.LeafletMouseEvent) => {
+      const lat = parseFloat(e.latlng.lat.toFixed(5));
+      const lon = parseFloat(e.latlng.lng.toFixed(5));
+
+      const popupNode = document.createElement('div');
+      popupNode.style.padding = '6px 4px';
+      popupNode.style.textAlign = 'center';
+      popupNode.style.minWidth = '190px';
+      popupNode.innerHTML = `
+        <div style="font-size: 11px; font-weight: 700; color: #f8fafc; margin-bottom: 2px; display: flex; align-items: center; justify-content: center; gap: 4px;">
+          ${SVG_ICONS.pin} <span>Ubicación Marcada</span>
+        </div>
+        <div style="font-size: 11px; color: #94a3b8; font-family: monospace; margin-bottom: 8px;">
+          ${lat}, ${lon}
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <button id="btn-crear-incidente-click" style="
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            width: 100%;
+            box-shadow: 0 2px 6px rgba(239, 68, 68, 0.4);
+          ">
+            ${SVG_ICONS.fire} <span>Registrar Incidente Aquí</span>
+          </button>
+          <button id="btn-crear-vivienda-click" style="
+            background: #d97706;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            width: 100%;
+            box-shadow: 0 2px 6px rgba(217, 119, 6, 0.4);
+          ">
+            ${SVG_ICONS.home} <span>Registrar Vivienda Rural Aquí</span>
+          </button>
+          <button id="btn-simular-aqui-click" style="
+            background: #ea580c;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            width: 100%;
+            box-shadow: 0 2px 6px rgba(234, 88, 12, 0.4);
+          ">
+            ${SVG_ICONS.play} <span>Usar como Ignición para Simular</span>
+          </button>
+        </div>
+      `;
+
+      const popup = L.popup({
+        closeButton: true,
+      })
+        .setLatLng(e.latlng)
+        .setContent(popupNode)
+        .openOn(map);
+
+      const btnInc = popupNode.querySelector('#btn-crear-incidente-click');
+      if (btnInc) {
+        btnInc.addEventListener('click', () => {
+          map.closePopup(popup);
+          if (onMapCreateIncidentRef.current) {
+            onMapCreateIncidentRef.current(lat, lon);
+          }
+        });
+      }
+
+      const btnViv = popupNode.querySelector('#btn-crear-vivienda-click');
+      if (btnViv) {
+        btnViv.addEventListener('click', () => {
+          map.closePopup(popup);
+          if (onMapCreateViviendaRef.current) {
+            onMapCreateViviendaRef.current(lat, lon);
+          }
+        });
+      }
+
+      const btnSim = popupNode.querySelector('#btn-simular-aqui-click');
+      if (btnSim) {
+        btnSim.addEventListener('click', () => {
+          map.closePopup(popup);
+          if (onMapSetSimCoordsRef.current) {
+            onMapSetSimCoordsRef.current(lat, lon);
+          }
+        });
+      }
+    });
+
+    mapInstanceRef.current = map;
+
+    return () => {
+      map.remove();
+      mapInstanceRef.current = null;
+    };
+  }, []);
+
+  // Smooth flyTo when selectedIncidente changes
+  useEffect(() => {
+    if (selectedIncidente && mapInstanceRef.current) {
+      mapInstanceRef.current.flyTo([selectedIncidente.latitud, selectedIncidente.longitud], 14, { duration: 1.0 });
+    }
+  }, [selectedIncidente]);
+
+  // Smooth flyTo when specific coordinates are focused (e.g. from ML Occurrence panel)
+  useEffect(() => {
+    if (focusCoords && mapInstanceRef.current) {
+      mapInstanceRef.current.flyTo(focusCoords, 14, { duration: 1.0 });
+    }
+  }, [focusCoords]);
+
+  // Filter focos by sensor
+  const focosModis = focos.filter((f) => f.sensor?.toUpperCase().includes('MODIS'));
+  const focosViirs = focos.filter((f) => f.sensor?.toUpperCase().includes('VIIRS'));
+  const focosSerfor = focos.filter((f) => f.fuente === 'SERFOR' || f.sensor?.toUpperCase().includes('SERFOR'));
+
+  // Update MODIS Layer (1km pixel footprint - estático, cero oscilaciones)
+  useEffect(() => {
+    const layer = layersRef.current.modis;
+    layer.clearLayers();
+    if (!showModis) return;
+
+    focosModis.forEach((foco) => {
+      // Marcador estático no oscilante
+      const customIcon = L.divIcon({
+        html: `<div class="hotspot-modis-pulse" title="NASA MODIS (${foco.satelite}) - ${foco.frp} MW"></div>`,
+        className: 'custom-modis-marker',
+        iconSize: [16, 16],
+        iconAnchor: [8, 8],
+      });
+
+      const marker = L.marker([foco.latitud, foco.longitud], { icon: customIcon });
+      marker.bindPopup(`
+        <div style="font-family: var(--font-sans); min-width: 220px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+            <span style="font-size: 10px; font-weight: 700; color: #ef4444; text-transform: uppercase;">${SVG_ICONS.fire} NASA MODIS [1km]</span>
+            <span style="font-size: 10px; font-family: var(--font-mono); color: #cbd5e1; background: rgba(239, 68, 68, 0.2); padding: 1px 6px; border-radius: 4px;">
+              ${foco.satelite || 'Terra/Aqua'}
+            </span>
+          </div>
+          <h4 style="font-size: 13px; font-weight: 700; color: #ffffff; margin-bottom: 6px;">Foco Satelital MODIS</h4>
+          <div style="font-size: 11px; color: #94a3b8; display: flex; flex-direction: column; gap: 3px;">
+            <span><strong>Potencia Radiativa (FRP):</strong> <span style="color: #fb923c; font-weight: 700;">${foco.frp} MW</span></span>
+            <span><strong>Confianza de detección:</strong> <strong style="color: #38bdf8;">${foco.confianza_numerica || 85}%</strong> (${foco.confianza.toUpperCase()})</span>
+            <span><strong>Resolución Sensor:</strong> 1 km / 1000 m píxel</span>
+            <span><strong>Temperatura de Brillo:</strong> ${foco.brillo_kelvin || 322.4} K</span>
+            <span><strong>Fecha / Hora Obs:</strong> ${foco.fecha_hora}</span>
+            <span><strong>Coordenadas:</strong> ${foco.latitud.toFixed(4)}, ${foco.longitud.toFixed(4)}</span>
+          </div>
+          <button onclick="window.__willai_create_incident && window.__willai_create_incident(${foco.latitud}, ${foco.longitud})" style="
+            margin-top: 8px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            box-shadow: 0 2px 4px rgba(239, 68, 68, 0.4);
+          ">
+            ${SVG_ICONS.fire} <span>Registrar Incidente en este Foco</span>
+          </button>
+        </div>
+      `);
+      layer.addLayer(marker);
+    });
+  }, [focosModis, showModis]);
+
+  // Update VIIRS Layer (375m resolution - estático, cero oscilaciones)
+  useEffect(() => {
+    const layer = layersRef.current.viirs;
+    layer.clearLayers();
+    if (!showViirs) return;
+
+    focosViirs.forEach((foco) => {
+      const customIcon = L.divIcon({
+        html: `<div class="hotspot-viirs-pulse" title="NASA VIIRS (${foco.satelite}) - ${foco.frp} MW"></div>`,
+        className: 'custom-viirs-marker',
+        iconSize: [14, 14],
+        iconAnchor: [7, 7],
+      });
+
+      const marker = L.marker([foco.latitud, foco.longitud], { icon: customIcon });
+      marker.bindPopup(`
+        <div style="font-family: var(--font-sans); min-width: 220px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+            <span style="font-size: 10px; font-weight: 700; color: #f59e0b; text-transform: uppercase;">${SVG_ICONS.satellite} NASA VIIRS [375m]</span>
+            <span style="font-size: 10px; font-family: var(--font-mono); color: #cbd5e1; background: rgba(245, 158, 11, 0.2); padding: 1px 6px; border-radius: 4px;">
+              ${foco.satelite || 'NOAA-20'}
+            </span>
+          </div>
+          <h4 style="font-size: 13px; font-weight: 700; color: #ffffff; margin-bottom: 6px;">Foco Térmico VIIRS</h4>
+          <div style="font-size: 11px; color: #94a3b8; display: flex; flex-direction: column; gap: 3px;">
+            <span><strong>FRP:</strong> <span style="color: #fb923c; font-weight: 700;">${foco.frp} MW</span></span>
+            <span><strong>Confianza:</strong> ${foco.confianza.toUpperCase()} (${foco.confianza_numerica || 70}%)</span>
+            <span><strong>Resolución Sensor:</strong> 375 m píxel de alta precisión</span>
+            <span><strong>Fecha / Hora Obs:</strong> ${foco.fecha_hora}</span>
+            <span><strong>Coordenadas:</strong> ${foco.latitud.toFixed(4)}, ${foco.longitud.toFixed(4)}</span>
+          </div>
+          <button onclick="window.__willai_create_incident && window.__willai_create_incident(${foco.latitud}, ${foco.longitud})" style="
+            margin-top: 8px;
+            background: #f59e0b;
+            color: #030712;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            box-shadow: 0 2px 4px rgba(245, 158, 11, 0.4);
+          ">
+            ${SVG_ICONS.fire} <span>Registrar Incidente en este Foco</span>
+          </button>
+        </div>
+      `);
+      layer.addLayer(marker);
+    });
+  }, [focosViirs, showViirs]);
+
+  // Update SERFOR Layer (estático, cero oscilaciones)
+  useEffect(() => {
+    const layer = layersRef.current.serfor;
+    layer.clearLayers();
+    if (!showSerfor) return;
+
+    focosSerfor.forEach((foco) => {
+      const customIcon = L.divIcon({
+        html: `<div style="width: 12px; height: 12px; border-radius: 2px; background: #10b981; border: 1.5px solid #ffffff;" title="SERFOR Perú"></div>`,
+        className: 'custom-serfor-marker',
+        iconSize: [12, 12],
+        iconAnchor: [6, 6],
+      });
+
+      const marker = L.marker([foco.latitud, foco.longitud], { icon: customIcon });
+      marker.bindPopup(`
+        <div style="font-family: var(--font-sans); min-width: 200px;">
+          <span style="font-size: 10px; font-weight: 700; color: #10b981; text-transform: uppercase;">${SVG_ICONS.shield} SERFOR PERÚ (Oficial)</span>
+          <h4 style="font-size: 13px; font-weight: 700; color: #ffffff; margin: 4px 0;">Foco Georreferenciado</h4>
+          <div style="font-size: 11px; color: #94a3b8; display: flex; flex-direction: column; gap: 2px;">
+            <span><strong>FRP:</strong> ${foco.frp} MW</span>
+            <span><strong>Fecha:</strong> ${foco.fecha_hora}</span>
+            <span><strong>Coordenadas:</strong> ${foco.latitud.toFixed(4)}, ${foco.longitud.toFixed(4)}</span>
+          </div>
+          <button onclick="window.__willai_create_incident && window.__willai_create_incident(${foco.latitud}, ${foco.longitud})" style="
+            margin-top: 8px;
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            box-shadow: 0 2px 4px rgba(16, 185, 129, 0.4);
+          ">
+            ${SVG_ICONS.fire} <span>Registrar Incidente en este Foco</span>
+          </button>
+        </div>
+      `);
+      layer.addLayer(marker);
+    });
+  }, [focosSerfor, showSerfor]);
+
+  // Update Rastros Fusionados Layer (Multi-Sensor MODIS + VIIRS disueltos por día y proximidad métrica)
+  useEffect(() => {
+    const layer = layersRef.current.rastrosFusionados;
+    layer.clearLayers();
+    if (!showRastrosFusionados || !rastrosFusionados || !rastrosFusionados.features) return;
+
+    try {
+      const geoLayer = L.geoJSON(rastrosFusionados as any, {
+        style: (feat) => {
+          const p = feat?.properties || {};
+          const isMulti = p.es_multisensor;
+          const color = isMulti ? '#ea580c' : (p.sensores_fusionados?.includes('VIIRS') ? '#f59e0b' : '#ef4444');
+          return {
+            color: color,
+            weight: 2.5,
+            opacity: 0.95,
+            fillColor: color,
+            fillOpacity: isMulti ? 0.45 : 0.35,
+            dashArray: isMulti ? undefined : '4, 4'
+          };
+        },
+        onEachFeature: (feat, layerItem: any) => {
+          const p = feat.properties || {};
+          const color = p.es_multisensor ? '#ea580c' : (p.sensores_fusionados?.includes('VIIRS') ? '#f59e0b' : '#ef4444');
+          const areaM2 = Math.round((p.area_quemada_ha || 0) * 10000);
+          const areaM2Str = areaM2.toLocaleString('es-PE') + ' m²';
+          const areaHaStr = (p.area_quemada_ha || 0).toLocaleString('es-PE', { minimumFractionDigits: 1, maximumFractionDigits: 2 }) + ' ha';
+          const fechaIncidente = p.fecha_dia || 'N/D';
+          const duracion = formatearDuracionIncendio(p.fecha_inicio_utc, p.fecha_fin_utc, p.hora_ventana_utc);
+
+          layerItem.on({
+            mouseover: () => {
+              layerItem.setStyle({ weight: 4.5, fillOpacity: 0.70 });
+            },
+            mouseout: () => {
+              geoLayer.resetStyle(layerItem);
+            }
+          });
+
+          // Tooltip de inspección táctica directa (Hover sin clics requeridos)
+          layerItem.bindTooltip(`
+            <div style="font-family: inherit; font-size: 11.5px; padding: 4px 6px; min-width: 210px; color: #f8fafc; line-height: 1.45;">
+              <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 3px; margin-bottom: 5px;">
+                <span style="font-size: 10px; font-weight: 800; color: ${color}; text-transform: uppercase;">
+                  ${p.id_rastro || 'RASTRO FUSIONADO'}
+                </span>
+                <span style="font-size: 9.5px; color: #94a3b8; font-family: monospace;">${p.hora_ventana_utc || ''}</span>
+              </div>
+              <div style="font-size: 14px; font-weight: 800; color: #fb923c; margin-bottom: 3px;">
+                ${areaM2Str} <span style="font-size: 11px; font-weight: 600; color: #38bdf8;">(${areaHaStr})</span>
+              </div>
+              <div style="color: #e2e8f0; font-size: 11px; margin-bottom: 1px;">
+                <strong style="color: #94a3b8;">Fecha:</strong> ${fechaIncidente}
+              </div>
+              <div style="color: #38bdf8; font-size: 11px;">
+                <strong style="color: #94a3b8;">Duración:</strong> <span style="color: #a78bfa; font-weight: 700;">${duracion}</span>
+              </div>
+            </div>
+          `, { sticky: true, direction: 'top', opacity: 0.98 });
+
+          // Popup táctico extendido con los tres datos requeridos en primer plano
+          layerItem.bindPopup(`
+            <div style="font-family: inherit; font-size: 12px; color: #f8fafc; padding: 4px; min-width: 280px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 6px;">
+                <div>
+                  <span style="font-size: 10px; font-weight: 800; color: ${color}; text-transform: uppercase; letter-spacing: 0.05em;">
+                    ${SVG_ICONS.shield} ${p.id_rastro || 'RASTRO FUSIONADO'}
+                  </span>
+                  <div style="font-size: 13px; font-weight: 800; color: #ffffff;">Frente de Fuego Satelital</div>
+                </div>
+                <span style="font-size: 10px; padding: 2px 6px; border-radius: 4px; background: rgba(234, 88, 12, 0.25); color: #fb923c; font-weight: 700; border: 1px solid rgba(234, 88, 12, 0.4);">
+                  UTM 18S
+                </span>
+              </div>
+
+              <!-- Tres Datos Clave: Tamaño m2, Fecha de Incidente, Duración de Incendio -->
+              <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px;">
+                <!-- 1. Tamaño de tierra afectada en m2 -->
+                <div style="background: rgba(234, 88, 12, 0.12); border: 1px solid rgba(234, 88, 12, 0.35); border-radius: 6px; padding: 6px 10px;">
+                  <div style="font-size: 10px; font-weight: 700; color: #fb923c; text-transform: uppercase; letter-spacing: 0.04em;">
+                    ${SVG_ICONS.area} Tamaño de Tierra Afectada
+                  </div>
+                  <div style="font-size: 17px; font-weight: 800; color: #ffffff; margin-top: 1px;">
+                    ${areaM2Str}
+                  </div>
+                  <div style="font-size: 10.5px; color: #38bdf8; font-weight: 600;">
+                    Equivalente a ${areaHaStr} de cobertura vegetal
+                  </div>
+                </div>
+
+                <!-- 2. Fecha de Incidente -->
+                <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 6px; padding: 6px 10px;">
+                  <div style="font-size: 10px; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.04em;">
+                    ${SVG_ICONS.calendar} Fecha de Incidente
+                  </div>
+                  <div style="font-size: 14px; font-weight: 800; color: #ffffff; margin-top: 1px;">
+                    ${fechaIncidente}
+                  </div>
+                  <div style="font-size: 10px; color: #94a3b8;">
+                    Detección satelital oficial NASA FIRMS
+                  </div>
+                </div>
+
+                <!-- 3. Duración de Incendio -->
+                <div style="background: rgba(167, 139, 250, 0.08); border: 1px solid rgba(167, 139, 250, 0.3); border-radius: 6px; padding: 6px 10px;">
+                  <div style="font-size: 10px; font-weight: 700; color: #a78bfa; text-transform: uppercase; letter-spacing: 0.04em;">
+                    ${SVG_ICONS.clock} Duración del Incendio
+                  </div>
+                  <div style="font-size: 14px; font-weight: 800; color: #ffffff; margin-top: 1px;">
+                    ${duracion}
+                  </div>
+                  <div style="font-size: 10px; color: #cbd5e1;">
+                    Ventana observada: <strong style="color: #fff;">${p.hora_ventana_utc || 'N/D'}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Métricas Técnicas y Satélites -->
+              <div style="background: rgba(3, 7, 18, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; padding: 8px; margin-bottom: 8px;">
+                <div style="font-size: 11px; color: #cbd5e1; margin-bottom: 4px;">
+                  <span style="color: #94a3b8;">Sensores:</span> <strong style="color: #fff;">${p.sensores_fusionados}</strong>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 10.5px;">
+                  <div><span style="color: #94a3b8;">Focos:</span> <b style="color: #38bdf8;">${p.focos_totales_fusionados} (${p.focos_viirs}V / ${p.focos_modis}M)</b></div>
+                  <div><span style="color: #94a3b8;">FRP Acumulado:</span> <b style="color: #f97316;">${p.frp_total_mw} MW</b></div>
+                  <div><span style="color: #94a3b8;">Temp. Brillo:</span> <b style="color: #fff;">${p.temperatura_brillo_max_c ?? 'N/D'} °C</b></div>
+                  <div><span style="color: #94a3b8;">Confianza:</span> <b style="color: #10b981;">${p.confianza_maxima}</b></div>
+                </div>
+              </div>
+
+              <div style="font-size: 9.5px; color: #94a3b8; margin-bottom: 8px; line-height: 1.3;">
+                ${SVG_ICONS.shield} <strong>Huella física UTM 18S</strong> • Proximidad métrica 1,200m (sin doble conteo de área).
+              </div>
+
+              ${(feat.geometry as any)?.coordinates ? `
+                <button onclick="(function(){
+                  try {
+                    var coords = ${JSON.stringify((feat.geometry as any).coordinates)};
+                    var p0 = coords[0] && coords[0][0] ? coords[0][0] : coords[0];
+                    if (Array.isArray(p0[0])) p0 = p0[0];
+                    var lon = p0[0], lat = p0[1];
+                    if (window.__willai_create_incident) window.__willai_create_incident(lat, lon);
+                  } catch(e) {
+                    if (window.__willai_create_incident) window.__willai_create_incident(-15.0189, -73.7806);
+                  }
+                })()" style="
+                  background: #ea580c;
+                  color: white;
+                  border: none;
+                  padding: 6px 10px;
+                  border-radius: 6px;
+                  font-size: 11px;
+                  font-weight: 700;
+                  cursor: pointer;
+                  width: 100%;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  gap: 4px;
+                  box-shadow: 0 2px 4px rgba(234, 88, 12, 0.4);
+                ">
+                  ${SVG_ICONS.fire} <span>Registrar Incidente en este Rastro</span>
+                </button>
+              ` : ''}
+            </div>
+          `);
+        }
+      });
+
+      layer.addLayer(geoLayer);
+      if (mapInstanceRef.current && !mapInstanceRef.current.hasLayer(layer)) {
+        layer.addTo(mapInstanceRef.current);
+      }
+    } catch (e) {
+      console.warn('Error al renderizar capa de rastros fusionados:', e);
+    }
+  }, [rastrosFusionados, showRastrosFusionados]);
+
+  // Update Occurrence Risk Grid Layer (Machine Learning Susceptibility Grid)
+  useEffect(() => {
+    const layer = layersRef.current.riesgoOcurrencia;
+    layer.clearLayers();
+    if (!showRiesgoOcurrencia || !grillaOcurrencia || !grillaOcurrencia.features) return;
+
+    try {
+      const geoJsonLayer = L.geoJSON(grillaOcurrencia as any, {
+        style: (feat) => {
+          const p = feat?.properties || {};
+          const color = p.color_hex || '#f59e0b';
+          return {
+            color: color,
+            weight: 1.8,
+            opacity: 0.95,
+            fillColor: color,
+            fillOpacity: 0.32,
+            dashArray: '4, 4'
+          };
+        },
+        onEachFeature: (feat, layerItem: any) => {
+          const p = feat.properties || {};
+          const color = p.color_hex || '#f59e0b';
+
+          layerItem.on({
+            mouseover: () => {
+              layerItem.setStyle({
+                weight: 3,
+                fillOpacity: 0.65,
+                dashArray: ''
+              });
+            },
+            mouseout: () => {
+              geoJsonLayer.resetStyle(layerItem);
+            }
+          });
+
+          layerItem.bindPopup(`
+            <div style="font-family: inherit; font-size: 12px; color: #f8fafc; padding: 4px; min-width: 240px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 4px;">
+                <strong style="color: ${color}; text-transform: uppercase; font-size: 12.5px;">
+                  ${SVG_ICONS.shield} Riesgo ML: ${(p.nivel_riesgo || 'bajo').toUpperCase()} (${p.probabilidad_pct ?? 0}%)
+                </strong>
+                <span style="font-size: 10px; color: #94a3b8; font-family: monospace;">#Celda ${p.id_celda}</span>
+              </div>
+              <div style="grid-template-columns: 1fr 1fr; display: grid; gap: 4px; font-size: 11px; margin-bottom: 6px;">
+                <div><span style="color: #94a3b8;">Distrito:</span> <b style="color: #38bdf8;">${p.distrito || 'Parinacochas'}</b></div>
+                <div><span style="color: #94a3b8;">C. Poblado:</span> <b style="color: #fb923c;">${p.comunidad_cercana}</b></div>
+                <div><span style="color: #94a3b8;">Elevación:</span> <b style="color: #fff;">${p.elevacion_m} m</b></div>
+                <div><span style="color: #94a3b8;">Pendiente:</span> <b style="color: #fff;">${p.pendiente_deg}°</b></div>
+                <div><span style="color: #94a3b8;">Distancia C.P.:</span> <b style="color: #fff;">${p.distancia_comunidad_km} km</b></div>
+                <div><span style="color: #94a3b8;">FWI Canadiense:</span> <b style="color: #f87171;">${p.fwi}</b></div>
+                <div><span style="color: #94a3b8;">Temperatura:</span> <b style="color: #fb923c;">${p.temperatura_c} °C</b></div>
+                <div><span style="color: #94a3b8;">Humedad:</span> <b style="color: #38bdf8;">${p.humedad_pct ?? 40} %</b></div>
+              </div>
+              <div style="font-size: 10px; color: #cbd5e1; background: rgba(0,0,0,0.4); padding: 5px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.08);">
+                <span>${SVG_ICONS.satellite} Modelo: Random Forest Calibrado (Platt)</span><br/>
+                <span>${SVG_ICONS.clock} Actualizado: ${p.fecha_actualizacion}</span>
+              </div>
+            </div>
+          `);
+        }
+      });
+      layer.addLayer(geoJsonLayer);
+      if (mapInstanceRef.current && !mapInstanceRef.current.hasLayer(layer)) {
+        layer.addTo(mapInstanceRef.current);
+      }
+    } catch (e) {
+      console.warn('Error al renderizar capa GeoJSON de ocurrencia:', e);
+    }
+  }, [grillaOcurrencia, showRiesgoOcurrencia]);
+
+  // Update Fire Propagation Isochrones Layer (Cell2Fire Eliptico Andino: 1h Amarillo, 3h Naranja, 6h Rojo)
+  useEffect(() => {
+    const layer = layersRef.current.isocronasSimulacion;
+    layer.clearLayers();
+    if (!showSimulacionIsocronas || !simulacionGeojson || !simulacionGeojson.features) return;
+
+    try {
+      // Ordenar descendente por hora_paso (6h abajo, 3h medio, 1h arriba) para evitar oclusión visual
+      const sortedFeatures = [...simulacionGeojson.features].sort(
+        (a: any, b: any) => (b.properties?.hora_paso || 0) - (a.properties?.hora_paso || 0)
+      );
+
+      const isocronasLayer = L.geoJSON({ type: 'FeatureCollection', features: sortedFeatures } as any, {
+        style: (feat) => {
+          const p = feat?.properties || {};
+          const hora = p.hora_paso;
+          // Anillos cromáticos requeridos: 1h amarillo (#FBBF24), 3h naranja (#F97316), 6h rojo (#EF4444)
+          const color = hora === 1 ? '#FBBF24' : hora === 3 ? '#F97316' : '#EF4444';
+          const fillOpacity = hora === 1 ? 0.40 : hora === 3 ? 0.30 : 0.22;
+          return {
+            color: color,
+            weight: 2.8,
+            opacity: 0.95,
+            fillColor: color,
+            fillOpacity: fillOpacity,
+            dashArray: hora === 6 ? '6, 6' : undefined
+          };
+        },
+        onEachFeature: (feat, layerItem: any) => {
+          const p = feat.properties || {};
+          const hora = p.hora_paso;
+          const color = hora === 1 ? '#FBBF24' : hora === 3 ? '#F97316' : '#EF4444';
+
+          layerItem.on({
+            mouseover: () => {
+              layerItem.setStyle({ weight: 4.5, fillOpacity: 0.60 });
+            },
+            mouseout: () => {
+              isocronasLayer.resetStyle(layerItem);
+            }
+          });
+
+          layerItem.bindPopup(`
+            <div style="font-family: inherit; font-size: 12px; color: #f8fafc; padding: 6px; min-width: 250px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 4px;">
+                <strong style="color: ${color}; text-transform: uppercase; font-size: 13px;">
+                  ${SVG_ICONS.fire} Isócrona +${hora} Horas
+                </strong>
+                <span style="font-size: 11.5px; color: #38bdf8; font-weight: 800;">${p.area_hectareas} ha</span>
+              </div>
+              <div style="grid-template-columns: 1fr 1fr; display: grid; gap: 4px; font-size: 11px; margin-bottom: 8px;">
+                <div><span style="color: #94a3b8;">Velocidad Máx:</span> <b style="color: #fff;">${p.velocidad_max_m_min ?? 'N/D'} m/min</b></div>
+                <div><span style="color: #94a3b8;">Celdas quemadas:</span> <b style="color: #fff;">${p.celdas_quemadas ?? 'N/D'}</b></div>
+                <div><span style="color: #94a3b8;">Motor:</span> <b style="color: #a78bfa;">Elíptico Andino</b></div>
+                <div><span style="color: #94a3b8;">Resolución:</span> <b style="color: #fff;">30m (Copernicus DEM)</b></div>
+              </div>
+              <div style="font-size: 10px; color: #38bdf8; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); padding: 5px 8px; border-radius: 4px; line-height: 1.3;">
+                ${SVG_ICONS.shield} <strong>Calibrado LOFO 3-Fold y dNBR</strong> • Cortafuegos Viales y Fluviales activos.
+              </div>
+            </div>
+          `);
+        }
+      });
+
+      // Renderizar punto de ignición central simulado
+      if (simulacionGeojson.punto_ignicion && simulacionGeojson.punto_ignicion.coordinates) {
+        const [ignLon, ignLat] = simulacionGeojson.punto_ignicion.coordinates;
+        const ignMarker = L.circleMarker([ignLat, ignLon], {
+          radius: 7,
+          color: '#ffffff',
+          weight: 2.5,
+          fillColor: '#ea580c',
+          fillOpacity: 1.0
+        }).bindPopup(`
+          <div style="font-family: inherit; font-size: 12px; color: #fff; padding: 4px;">
+            <strong style="color: #f97316;">${SVG_ICONS.pin} Punto de Ignición Simulado</strong>
+            <div style="font-size: 11px; color: #94a3b8; font-family: monospace; margin-top: 2px;">
+              Lat: ${ignLat.toFixed(5)}<br/>Lon: ${ignLon.toFixed(5)}
+            </div>
+            <div style="font-size: 10px; color: #a78bfa; margin-top: 4px;">Simulación #${simulacionGeojson.simulacion_id}</div>
+          </div>
+        `);
+        layer.addLayer(ignMarker);
+      }
+
+      layer.addLayer(isocronasLayer);
+      if (mapInstanceRef.current && !mapInstanceRef.current.hasLayer(layer)) {
+        layer.addTo(mapInstanceRef.current);
+      }
+
+      // Auto-centrar suavemente en la zona de la simulación
+      if (mapInstanceRef.current && isocronasLayer.getBounds().isValid()) {
+        mapInstanceRef.current.fitBounds(isocronasLayer.getBounds(), { padding: [40, 40], maxZoom: 14 });
+      }
+    } catch (e) {
+      console.warn('Error al renderizar capa de isócronas de propagación:', e);
+    }
+  }, [simulacionGeojson, showSimulacionIsocronas]);
+
+  // Update Incidentes Layer (Generic Circular Markers, excluding closed incidents)
+  useEffect(() => {
+    const layer = layersRef.current.incidentes;
+    layer.clearLayers();
+    if (!showIncidentes) return;
+
+    // Filter OUT closed incidents so they never appear on the tactical map
+    const incidentesActivos = incidentes.filter((inc) => inc.estado !== 'cerrado');
+
+    incidentesActivos.forEach((inc) => {
+      const isCritical = inc.severidad === 'critica' || inc.severidad === 'alta';
+      const isSelected = selectedIncidente?.id === inc.id;
+      const bgColor = inc.estado === 'controlado' ? '#10b981' : inc.estado === 'pendiente' ? '#0284c7' : isCritical ? '#ef4444' : '#f59e0b';
+
+      const iconHtml = `
+        <div style="
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          background: ${bgColor};
+          border: ${isSelected ? '3px solid #38bdf8' : '2px solid #ffffff'};
+          box-shadow: 0 0 ${isSelected ? '20px #38bdf8' : '14px ' + bgColor};
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #ffffff;
+          font-weight: 900;
+          font-size: 13px;
+          cursor: pointer;
+        " title="${inc.codigo}: ${inc.titulo}">
+          ${inc.estado === 'controlado' ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'}
+        </div>
+      `;
+
+      const customIcon = L.divIcon({
+        html: iconHtml,
+        className: 'custom-inc-marker',
+        iconSize: [28, 28],
+        iconAnchor: [14, 14],
+      });
+
+      const marker = L.marker([inc.latitud, inc.longitud], {
+        icon: customIcon,
+        zIndexOffset: isSelected ? 2500 : 2000
+      });
+      marker.on('click', () => onSelectIncidente(inc));
+      marker.bindPopup(`
+        <div style="font-family: var(--font-sans); min-width: 220px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+            <span style="font-size: 11px; font-weight: 700; color: #fb923c; font-family: var(--font-mono);">${inc.codigo}</span>
+            <span style="font-size: 10px; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.1); text-transform: uppercase;">${inc.estado.replace('_', ' ')}</span>
+          </div>
+          <h4 style="font-size: 13px; font-weight: 700; color: #ffffff; margin-bottom: 4px;">${inc.titulo}</h4>
+          <p style="font-size: 11px; color: #cbd5e1; margin-bottom: 8px;">${inc.descripcion}</p>
+          ${inc.video_url ? `
+            <div style="margin-top: 6px; margin-bottom: 8px;">
+              <video src="${getMediaUrl(inc.video_url)}" controls playsinline preload="metadata" style="width: 100%; max-height: 130px; object-fit: cover; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); background: #000;"></video>
+            </div>
+          ` : (inc.fotografia_url ? `
+            <div style="margin-top: 6px; margin-bottom: 8px;">
+              <img src="${getMediaUrl(inc.fotografia_url)}" style="width: 100%; max-height: 120px; object-fit: cover; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2);" alt="Evidencia fotográfica"/>
+            </div>
+          ` : '')}
+          <div style="font-size: 11px; color: #94a3b8; display: flex; flex-direction: column; gap: 2px;">
+            <span><strong>Comunidad:</strong> ${inc.comunidad}</span>
+            <span><strong>Viviendas en riesgo:</strong> <strong style="color: #ef4444;">${inc.viviendas_riesgo}</strong></span>
+          </div>
+          <div style="margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 11px;">
+            <span style="color: #94a3b8;">${SVG_ICONS.shield} Brigadas desplegadas: </span>
+            <strong style="color: #38bdf8;">
+              ${inc.brigadas_asignadas && inc.brigadas_asignadas.length > 0 ? inc.brigadas_asignadas.join(', ') : 'Ninguna asignada aún'}
+            </strong>
+          </div>
+        </div>
+      `);
+      layer.addLayer(marker);
+    });
+  }, [incidentes, showIncidentes, selectedIncidente, onSelectIncidente]);
+
+  // Update Brigadas Layer with Tactical Dispatch Vectors
+  useEffect(() => {
+    const layer = layersRef.current.brigadas;
+    layer.clearLayers();
+    if (!showBrigadas) return;
+
+    brigadas.forEach((brigada) => {
+      if (!brigada.latitud || !brigada.longitud) return;
+
+      const isDispatched = brigada.estado === 'desplegada' || brigada.estado === 'en_operacion' || !!brigada.incidente_asignado;
+      const color = isDispatched ? '#06b6d4' : '#10b981';
+
+      // 1. Draw animated tactical deployment polyline to assigned incident
+      if (isDispatched && brigada.incidente_asignado) {
+        const destLat = brigada.incidente_asignado.latitud;
+        const destLon = brigada.incidente_asignado.longitud;
+
+        if (destLat && destLon) {
+          const dispatchLine = L.polyline(
+            [
+              [brigada.latitud, brigada.longitud],
+              [destLat, destLon]
+            ],
+            {
+              color: '#38bdf8',
+              weight: 3,
+              opacity: 0.9,
+              dashArray: '6, 8',
+              className: 'tactical-dispatch-line'
+            }
+          );
+
+          dispatchLine.bindPopup(`
+            <div style="font-family: var(--font-sans); min-width: 210px;">
+              <span style="font-size: 10px; font-weight: 700; color: #38bdf8; text-transform: uppercase;">${SVG_ICONS.shield} RUTA DE DESPACHO OPERATIVO</span>
+              <h4 style="font-size: 13px; font-weight: 700; color: #ffffff; margin: 3px 0;">${brigada.nombre}</h4>
+              <div style="font-size: 11px; color: #cbd5e1; margin-top: 4px;">
+                → <strong>Destino:</strong> <span style="color: #fb923c; font-weight: 700;">${brigada.incidente_asignado.codigo}</span> (${brigada.incidente_asignado.titulo})
+              </div>
+              <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">
+                Misión: <strong style="color: #38bdf8;">${brigada.incidente_asignado.rol.replace('_', ' ').toUpperCase()}</strong>
+              </div>
+            </div>
+          `);
+
+          layer.addLayer(dispatchLine);
+        }
+      }
+
+      // 2. Custom Marker for Brigade with Active/Ready badges
+      const iconHtml = `
+        <div class="${isDispatched ? 'brigade-deployed-pulse' : ''}" style="
+          position: relative;
+          width: 30px;
+          height: 30px;
+          border-radius: 8px;
+          background: #090d16;
+          border: 2px solid ${color};
+          box-shadow: 0 0 ${isDispatched ? '16px rgba(6, 182, 212, 0.7)' : '10px rgba(16, 185, 129, 0.4)'};
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+        " title="${brigada.nombre} (${isDispatched ? 'Desplegada' : 'Disponible'})">
+          ${SVG_ICONS.shield}
+          <div style="
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: ${isDispatched ? '#0284c7' : '#059669'};
+            color: #ffffff;
+            font-size: 8px;
+            font-weight: 800;
+            padding: 1px 4px;
+            border-radius: 3px;
+            white-space: nowrap;
+            letter-spacing: 0.4px;
+          ">
+            ${isDispatched ? 'DESPACHADA' : 'DISPONIBLE'}
+          </div>
+        </div>
+      `;
+
+      const customIcon = L.divIcon({
+        html: iconHtml,
+        className: 'custom-brigada-marker',
+        iconSize: [30, 30],
+        iconAnchor: [15, 15],
+      });
+
+      const marker = L.marker([brigada.latitud, brigada.longitud], {
+        icon: customIcon,
+        zIndexOffset: isDispatched ? 2200 : 1800
+      });
+
+      marker.bindPopup(`
+        <div style="font-family: var(--font-sans); min-width: 230px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+            <span style="font-size: 10px; font-weight: 800; color: ${color}; text-transform: uppercase;">
+              ${isDispatched ? `${SVG_ICONS.shield} BRIGADA DESPLEGADA` : `${SVG_ICONS.shield} BRIGADA DISPONIBLE`}
+            </span>
+            <span style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px; background: ${isDispatched ? 'rgba(6, 182, 212, 0.2)' : 'rgba(16, 185, 129, 0.2)'}; color: ${color}; font-weight: 700;">
+              ${isDispatched ? 'EN OPERACIÓN' : 'BASE OPERATIVA'}
+            </span>
+          </div>
+          <h4 style="font-size: 13.5px; font-weight: 700; color: #ffffff; margin-bottom: 2px;">${brigada.nombre}</h4>
+          <span style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 6px;">${brigada.entidad}</span>
+
+          ${brigada.incidente_asignado ? `
+            <div style="margin: 8px 0; padding: 8px; background: rgba(6, 182, 212, 0.12); border: 1px solid rgba(6, 182, 212, 0.35); border-radius: 6px; font-size: 11.5px;">
+              <div style="color: #38bdf8; font-weight: 700;">→ Despachada al Incidente:</div>
+              <div style="color: #ffffff; font-weight: 700; margin-top: 2px;">
+                ${brigada.incidente_asignado.codigo}: ${brigada.incidente_asignado.titulo}
+              </div>
+              <div style="color: #cbd5e1; margin-top: 4px;">
+                Misión: <strong style="color: #fb923c;">${brigada.incidente_asignado.rol.replace('_', ' ').toUpperCase()}</strong>
+              </div>
+            </div>
+          ` : ''}
+
+          <div style="font-size: 11px; color: #cbd5e1; display: flex; flex-direction: column; gap: 3px;">
+            <span><strong>Efectivos:</strong> ${brigada.numero_efectivos} rescatistas equipados</span>
+            <span><strong>Líder al mando:</strong> ${brigada.lider}</span>
+            <span><strong>Contacto radial/móvil:</strong> ${brigada.telefono}</span>
+          </div>
+        </div>
+      `);
+      layer.addLayer(marker);
+    });
+  }, [brigadas, showBrigadas]);
+
+  // Render Viviendas Rurales Layer
+  useEffect(() => {
+    const layer = layersRef.current.viviendas;
+    layer.clearLayers();
+
+    if (!showViviendas || !viviendas || viviendas.length === 0) return;
+
+    if (mapInstanceRef.current && !mapInstanceRef.current.hasLayer(layer)) {
+      layer.addTo(mapInstanceRef.current);
+    }
+
+    viviendas.forEach((viv) => {
+      const lat = typeof viv.latitud === 'string' ? parseFloat(viv.latitud) : Number(viv.latitud);
+      const lon = typeof viv.longitud === 'string' ? parseFloat(viv.longitud) : Number(viv.longitud);
+      if (lat == null || lon == null || isNaN(lat) || isNaN(lon) || lat === 0 || lon === 0) return;
+
+      const isVulnerable = viv.material === 'tapial' || viv.material === 'quincha' || viv.material === 'madera';
+      const markerBorder = isVulnerable ? '#ef4444' : '#f59e0b';
+      const markerBg = isVulnerable ? 'rgba(239, 68, 68, 0.35)' : 'rgba(245, 158, 11, 0.35)';
+
+      const icon = L.divIcon({
+        className: 'custom-vivienda-tactical-marker',
+        html: `
+          <div style="
+            width: 26px;
+            height: 26px;
+            background: #0f172a;
+            border: 2px solid ${markerBorder};
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 10px ${markerBg}, 0 2px 8px rgba(0,0,0,0.85);
+            cursor: pointer;
+            transition: transform 0.15s ease;
+          " title="${viv.codigo} (${viv.comunidad}): ${viv.referencia}">
+            ${SVG_ICONS.home}
+          </div>
+        `,
+        iconSize: [26, 26],
+        iconAnchor: [13, 13],
+      });
+
+      const marker = L.marker([lat, lon], { icon, zIndexOffset: 950 });
+
+      const popupHtml = `
+        <div style="font-family: Inter, sans-serif; min-width: 210px; padding: 4px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px;">
+            <span style="font-size: 13px; font-weight: 800; color: #f8fafc;">${SVG_ICONS.home} ${viv.codigo}</span>
+            <span style="font-size: 10px; background: ${viv.verificada ? 'rgba(16,185,129,0.2)' : 'rgba(156,163,175,0.2)'}; color: ${viv.verificada ? '#10b981' : '#9ca3af'}; border: 1px solid ${viv.verificada ? '#10b981' : '#6b7280'}; padding: 1px 5px; border-radius: 3px; font-weight: 700;">
+              ${viv.verificada ? 'Verificada' : 'Pendiente'}
+            </span>
+          </div>
+          <div style="font-size: 11px; color: #38bdf8; font-weight: 700; margin-bottom: 4px;">${SVG_ICONS.pin} Sector ${viv.comunidad}</div>
+          <div style="font-size: 11px; color: #cbd5e1; margin-bottom: 6px; line-height: 1.3;">${viv.referencia || 'Sin referencia'}</div>
+          <div style="font-size: 11px; color: #94a3b8; margin-bottom: 2px;"><strong>Responsable:</strong> ${viv.nombre_responsable || 'Familia comunera'}</div>
+          <div style="font-size: 11px; color: #94a3b8; margin-bottom: 2px;"><strong>Habitantes:</strong> ${viv.habitantes} personas</div>
+          <div style="font-size: 11px; color: #94a3b8; margin-bottom: 4px;"><strong>Material:</strong> <span style="color: ${markerBorder}; font-weight: 700;">${viv.material_display || viv.material}</span></div>
+          ${viv.telefono_contacto ? `<div style="font-size: 11px; color: #10b981; font-weight: 700; margin-top: 4px;">${SVG_ICONS.phone} ${viv.telefono_contacto}</div>` : ''}
+        </div>
+      `;
+
+      marker.bindPopup(popupHtml, { maxWidth: 280 });
+      layer.addLayer(marker);
+    });
+  }, [viviendas, showViviendas]);
+
+  // Update Parinacochas Provincial Boundary Layer (Official IGN / INEI Demarcation)
+  // Purely territorial reference with other provinces - zero hover tooltips or mouse capture
+  useEffect(() => {
+    const layer = layersRef.current.limiteProvincial;
+    layer.clearLayers();
+    if (!showLimiteProvincial) return;
+
+    try {
+      const provGeoJson = L.geoJSON(LIMITE_PROVINCIAL_PARINACOCHAS as any, {
+        interactive: false, // Disables all hover events, tooltips, and pointer capture
+        style: {
+          color: '#38bdf8', // Tactical Sky Cyan border
+          weight: 2.4,
+          opacity: 0.92,
+          dashArray: '8, 6',
+          fillColor: '#0284c7',
+          fillOpacity: 0.02,
+        },
+      });
+
+      layer.addLayer(provGeoJson);
+
+      // Subtle, non-intrusive boundary references indicating neighboring provinces
+      REFERENCIAS_PROVINCIAS_LIMITROFES.forEach((ref) => {
+        const badgeHtml = `
+          <div style="
+            pointer-events: none;
+            user-select: none;
+            font-family: monospace;
+            font-size: 9.5px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            color: #94a3b8;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(4px);
+            border: 1px dashed rgba(56, 189, 248, 0.45);
+            border-radius: 4px;
+            padding: 2px 7px;
+            white-space: nowrap;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.6);
+          ">
+            ${ref.nombre}
+          </div>
+        `;
+
+        const icon = L.divIcon({
+          html: badgeHtml,
+          className: 'tactical-border-ref',
+          iconSize: [160, 20],
+          iconAnchor: [80, 10],
+        });
+
+        const marker = L.marker([ref.lat, ref.lon], { icon, interactive: false, zIndexOffset: 200 });
+        layer.addLayer(marker);
+      });
+    } catch (e) {
+      console.warn('Error al renderizar límite provincial de Parinacochas:', e);
+    }
+  }, [showLimiteProvincial]);
+
+  // Update Parinacochas Internal District Boundaries (Optional subtle lines)
+  // Completely passive reference lines - zero hover tooltips or popups
+  useEffect(() => {
+    const layer = layersRef.current.distritos;
+    layer.clearLayers();
+    if (!showLimiteProvincial || !showDistritos) return;
+
+    try {
+      const distGeoJson = L.geoJSON(LIMITES_DISTRITALES_PARINACOCHAS as any, {
+        interactive: false, // Completely passive, no hover events or tooltips
+        style: {
+          color: '#475569', // Subtle slate interior division
+          weight: 1.1,
+          opacity: 0.55,
+          dashArray: '3, 4',
+          fillColor: 'transparent',
+          fillOpacity: 0,
+        },
+      });
+
+      layer.addLayer(distGeoJson);
+    } catch (e) {
+      console.warn('Error al renderizar distritos de Parinacochas:', e);
+    }
+  }, [showLimiteProvincial, showDistritos]);
+
+  // Render Red Vial Oficial MTC / IGN (Nacional, Departamental, Vecinal)
+  useEffect(() => {
+    const layer = layersRef.current.carreteras;
+    layer.clearLayers();
+    if (!showCarreteras) return;
+
+    const renderCarreteras = (data: any) => {
+      try {
+        const geoLayer = L.geoJSON(data, {
+          style: (feat) => {
+            const cat = feat?.properties?.categoria;
+            if (cat === 'Nacional') {
+              return {
+                color: '#f59e0b', // Ámbar dorado para Red Vial Nacional (PE-32, PE-30A, etc.)
+                weight: 3.5,
+                opacity: 0.95,
+              };
+            } else if (cat === 'Departamental') {
+              return {
+                color: '#38bdf8', // Azul cielo táctico para Red Departamental (AY-117, AY-118, etc.)
+                weight: 2.4,
+                opacity: 0.90,
+              };
+            } else if (cat === 'Trocha') {
+              return {
+                color: '#fde047', // Amarillo arena brillante para trochas carrozables cortafuego
+                weight: 2.0,
+                opacity: 0.90,
+                dashArray: '6, 4',
+              };
+            } else if (cat === 'Sendero') {
+              return {
+                color: '#94a3b8', // Gris pizarra para senderos peatonales / herradura
+                weight: 1.2,
+                opacity: 0.70,
+                dashArray: '2, 4',
+              };
+            } else {
+              // Vecinal / Rural
+              return {
+                color: '#e2e8f0', // Blanco hueso / plata para caminos vecinales
+                weight: 1.6,
+                opacity: 0.85,
+                dashArray: '4, 4',
+              };
+            }
+          },
+          onEachFeature: (feature, l) => {
+            const p = feature.properties || {};
+            let catBadgeColor = '#94a3b8';
+            if (p.categoria === 'Nacional') {
+              catBadgeColor = '#f59e0b';
+            } else if (p.categoria === 'Departamental') {
+              catBadgeColor = '#38bdf8';
+            } else if (p.categoria === 'Trocha') {
+              catBadgeColor = '#fde047';
+            } else if (p.categoria === 'Sendero') {
+              catBadgeColor = '#94a3b8';
+            } else {
+              catBadgeColor = '#e2e8f0';
+            }
+
+            l.bindTooltip(
+              `<div style="font-size: 11px; font-weight: 700; color: #f8fafc; display: flex; align-items: center; gap: 4px;">
+                ${SVG_ICONS.route} <span>${p.codigo || 'S/C'}: ${p.nombre || p.tipo_red} ${p.es_cortafuego ? '[Cortafuego]' : ''}</span>
+              </div>`,
+              { sticky: true, opacity: 0.95 }
+            );
+
+            l.bindPopup(`
+              <div style="font-family: var(--font-sans); min-width: 240px; padding: 4px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px;">
+                  <span style="font-size: 10px; font-weight: 800; color: ${catBadgeColor}; text-transform: uppercase;">
+                    ${SVG_ICONS.route} ${p.tipo_red || 'RED VIAL'}
+                  </span>
+                  <span style="font-size: 9.5px; padding: 1px 6px; border-radius: 4px; background: rgba(255,255,255,0.08); color: #cbd5e1; font-family: var(--font-mono); font-weight: 700;">
+                    ${p.codigo || 'SINAC'}
+                  </span>
+                </div>
+                <h4 style="font-size: 13px; font-weight: 700; color: #ffffff; margin: 0 0 6px 0;">
+                  ${p.nombre || 'Carretera / Trocha'}
+                </h4>
+                <div style="font-size: 11px; color: #94a3b8; display: flex; flex-direction: column; gap: 4px;">
+                  <span><strong>Categoría:</strong> <strong style="color: ${catBadgeColor};">${p.categoria}</strong></span>
+                  <span><strong>Superficie:</strong> <strong style="color: #cbd5e1;">${p.superficie || 'Afirmado'}</strong></span>
+                  <span><strong>Fuente:</strong> ${p.fuente || 'MTC / IGN / OSM'}</span>
+                  ${
+                    p.es_cortafuego
+                      ? `<div style="margin-top: 4px; padding: 4px 8px; border-radius: 4px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; font-size: 10px; font-weight: 600; display: flex; align-items: center; gap: 4px;">
+                          ${SVG_ICONS.shield} <span>Barrera física / cortafuego activo en simulador</span>
+                        </div>`
+                      : ''
+                  }
+                </div>
+              </div>
+            `);
+          },
+        });
+
+        layer.addLayer(geoLayer);
+      } catch (err) {
+        console.warn('Error al renderizar capa de carreteras:', err);
+      }
+    };
+
+    if (cachedCarreterasGeoJson) {
+      renderCarreteras(cachedCarreterasGeoJson);
+    } else {
+      fetch('/data/carreteras_parinacochas.geojson')
+        .then((res) => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.json();
+        })
+        .then((data) => {
+          cachedCarreterasGeoJson = data;
+          renderCarreteras(data);
+        })
+        .catch((err) => console.warn('Error al cargar carreteras_parinacochas.geojson:', err));
+    }
+  }, [showCarreteras]);
+
+  // Render Red Hidrográfica Oficial ANA (Ríos y Quebradas)
+  useEffect(() => {
+    const layer = layersRef.current.rios;
+    layer.clearLayers();
+    if (!showRios) return;
+
+    const renderRios = (data: any) => {
+      try {
+        const geoLayer = L.geoJSON(data, {
+          style: (feat) => {
+            const tipo = feat?.properties?.tipo;
+            if (tipo === 'Río') {
+              return {
+                color: '#06b6d4', // Cyan / Aqua para ríos principales y secundarios
+                weight: 2.3,
+                opacity: 0.88,
+              };
+            } else {
+              // Quebrada
+              return {
+                color: '#38bdf8', // Azul hielo para quebradas
+                weight: 1.2,
+                opacity: 0.65,
+                dashArray: '3, 4',
+              };
+            }
+          },
+          onEachFeature: (feature, l) => {
+            const p = feature.properties || {};
+
+            l.bindTooltip(
+              `<div style="font-size: 11px; font-weight: 700; color: #f8fafc; display: flex; align-items: center; gap: 4px;">
+                ${SVG_ICONS.droplet} <span>${p.nombre} (${p.tipo})</span>
+              </div>`,
+              { sticky: true, opacity: 0.95 }
+            );
+
+            l.bindPopup(`
+              <div style="font-family: var(--font-sans); min-width: 210px; padding: 4px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px;">
+                  <span style="font-size: 10px; font-weight: 800; color: #06b6d4; text-transform: uppercase;">
+                    ${SVG_ICONS.droplet} RED HIDROGRÁFICA
+                  </span>
+                  <span style="font-size: 9.5px; padding: 1px 6px; border-radius: 4px; background: rgba(6, 182, 212, 0.15); color: #38bdf8; font-weight: 700;">
+                    ${p.tipo}
+                  </span>
+                </div>
+                <h4 style="font-size: 13px; font-weight: 700; color: #ffffff; margin: 0 0 6px 0;">
+                  ${p.nombre}
+                </h4>
+                <div style="font-size: 11px; color: #94a3b8; display: flex; flex-direction: column; gap: 3px;">
+                  <span><strong>Jerarquía:</strong> <strong style="color: #cbd5e1;">${p.jerarquia || 'Corriente natural'}</strong></span>
+                  <span><strong>Cuenca:</strong> <strong style="color: #38bdf8;">${p.cuenca || 'Cuenca Parinacochas'}</strong></span>
+                  <span><strong>Fuente:</strong> ${p.fuente || 'ANA / IGN Carta Nacional'}</span>
+                </div>
+              </div>
+            `);
+          },
+        });
+
+        layer.addLayer(geoLayer);
+      } catch (err) {
+        console.warn('Error al renderizar red hidrográfica:', err);
+      }
+    };
+
+    if (cachedRiosGeoJson) {
+      renderRios(cachedRiosGeoJson);
+    } else {
+      fetch('/data/rios_parinacochas.geojson')
+        .then((res) => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.json();
+        })
+        .then((data) => {
+          cachedRiosGeoJson = data;
+          renderRios(data);
+        })
+        .catch((err) => console.warn('Error al cargar rios_parinacochas.geojson:', err));
+    }
+  }, [showRios]);
+
+  const handleCenterCoracora = () => {
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.flyTo(CORACORA_COORDS, 13, { duration: 1.2 });
+    }
+  };
+
+  const handleFitParinacochas = () => {
+    if (mapInstanceRef.current) {
+      const bounds = L.latLngBounds(
+        [-15.60, -74.20],
+        [-14.50, -73.35]
+      );
+      mapInstanceRef.current.fitBounds(bounds, { padding: [25, 25], duration: 1.2 });
+    }
+  };
+
+  const handleApplyCustom = () => {
+    if (onApplyCustomDates) {
+      onApplyCustomDates(inputDesde, inputHasta);
+    }
+    onChangeTimeRange('custom');
+    setIsDateModalOpen(false);
+  };
+
+  return (
+    <div className="map-viewport">
+      <div id="leaflet-map" ref={mapContainerRef} />
+
+      {/* ========================================================
+          NASA FIRMS Style Top Timeline Bar (Matching Screenshot)
+          ======================================================== */}
+      <div className="nasa-timeline-header">
+        <div className="nasa-timeline-title">
+          <Calendar size={14} color="#fb923c" />
+          <span>ACTIVIDAD HISTÓRICA:</span>
+        </div>
+
+        <div className="nasa-time-btn-group">
+          <button
+            id="time-btn-today"
+            className={`nasa-time-btn ${timeRange === 'today' ? 'active' : ''}`}
+            onClick={() => onChangeTimeRange('today')}
+            title="Detecciones de hoy"
+          >
+            HOY
+          </button>
+          <button
+            id="time-btn-24h"
+            className={`nasa-time-btn ${timeRange === '24h' ? 'active' : ''}`}
+            onClick={() => onChangeTimeRange('24h')}
+            title="Últimas 24 Horas"
+          >
+            24 HORAS
+          </button>
+          <button
+            id="time-btn-7d"
+            className={`nasa-time-btn ${timeRange === '7d' ? 'active' : ''}`}
+            onClick={() => onChangeTimeRange('7d')}
+            title="Últimos 7 días"
+          >
+            7 DÍAS
+          </button>
+          <button
+            id="time-btn-30d"
+            className={`nasa-time-btn ${timeRange === '30d' ? 'active' : ''}`}
+            onClick={() => onChangeTimeRange('30d')}
+            title="Último mes (30 días)"
+          >
+            30 DÍAS
+          </button>
+          <button
+            id="time-btn-3m"
+            className={`nasa-time-btn ${timeRange === '3m' ? 'active' : ''}`}
+            onClick={() => onChangeTimeRange('3m')}
+            title="Últimos 3 meses"
+          >
+            3 MESES
+          </button>
+          <button
+            id="time-btn-6m"
+            className={`nasa-time-btn ${timeRange === '6m' ? 'active' : ''}`}
+            onClick={() => onChangeTimeRange('6m')}
+            title="Últimos 6 meses (180 días)"
+          >
+            6 MESES
+          </button>
+        </div>
+
+        {/* Custom Calendar Date Picker Button */}
+        <button
+          id="btn-calendar-range"
+          className={`nasa-calendar-btn ${timeRange === 'custom' ? 'active' : ''}`}
+          onClick={() => setIsDateModalOpen(true)}
+          title="Seleccionar rango de fechas personalizado"
+        >
+          <Calendar size={13} />
+          <span>{timeRange === 'custom' ? `${inputDesde} / ${inputHasta}` : 'Calendario'}</span>
+        </button>
+      </div>
+
+      {/* Floating Tactical Layer Dropdown Menu & Quick Extents */}
+      <div className="map-layer-menu-container" ref={layersDropdownRef}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <button
+            id="btn-toggle-layers-menu"
+            className={`map-layer-dropdown-trigger ${isLayersOpen ? 'active' : ''}`}
+            onClick={() => setIsLayersOpen(!isLayersOpen)}
+            title="Capas cartográficas y sensores satelitales"
+          >
+            <Layers size={14} color="#38bdf8" />
+            <span style={{ fontWeight: 700, fontSize: '12px', letterSpacing: '0.02em' }}>Capas y Sensores</span>
+            <span className="layer-count-badge">
+              {[showModis, showViirs, showSerfor, showRiesgoOcurrencia, showSimulacionIsocronas, showIncidentes, showBrigadas, showViviendas, showLimiteProvincial, showCarreteras, showRios].filter(Boolean).length}
+            </span>
+            {isLayersOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
+
+          <button
+            id="btn-fit-parinacochas"
+            className="btn-admin btn-admin-outline"
+            style={{ padding: '6px 10px', fontSize: '11px', borderColor: 'rgba(56, 189, 248, 0.4)', color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '5px' }}
+            onClick={handleFitParinacochas}
+            title="Encuadrar todo el territorio de la Provincia de Parinacochas"
+          >
+            <Compass size={13} />
+            <span>Parinacochas</span>
+          </button>
+
+          <button
+            id="btn-recenter"
+            className="btn-admin btn-admin-outline"
+            style={{ padding: '6px 10px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '5px' }}
+            onClick={handleCenterCoracora}
+            title="Centrar en Coracora (Capital)"
+          >
+            <Crosshair size={13} />
+            <span>Coracora</span>
+          </button>
+        </div>
+
+        {/* Dropdown Panel Content */}
+        {isLayersOpen && (
+          <div className="map-layer-dropdown-panel" id="dropdown-capas-sensores">
+            {/* 1. Sensores Satelitales */}
+            <div>
+              <div className="layer-dropdown-section-title">
+                <Radio size={12} color="#38bdf8" />
+                <span>Sensores Satelitales & SERFOR</span>
+              </div>
+
+              <label className="map-layer-toggle" id="layer-rastros-toggle" style={{ background: 'rgba(234, 88, 12, 0.15)', border: '1px solid rgba(234, 88, 12, 0.4)', borderRadius: '6px', padding: '6px 8px', marginBottom: '6px' }}>
+                <input
+                  type="checkbox"
+                  checked={showRastrosFusionados}
+                  onChange={(e) => onToggleRastrosFusionados?.(e.target.checked)}
+                />
+                <span style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
+                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontWeight: 800, color: '#fb923c', fontSize: '11.5px' }}>
+                      Rastros Fusionados ({rastrosFusionados?.features?.length || 0})
+                    </span>
+                    <span style={{ fontSize: '9px', background: '#ea580c', color: '#fff', padding: '1px 5px', borderRadius: '3px', fontWeight: 800 }}>
+                      ACTIVO
+                    </span>
+                  </span>
+                  <span style={{ fontSize: '10px', color: '#cbd5e1' }}>
+                    Área m² • Fecha incidente • Duración de incendio
+                  </span>
+                </span>
+              </label>
+
+              <div style={{ fontSize: '10px', color: '#94a3b8', margin: '6px 0 3px 2px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Focos Crudos Individuales:
+              </div>
+
+              <label className="map-layer-toggle" id="layer-modis-toggle">
+                <input
+                  type="checkbox"
+                  checked={showModis}
+                  onChange={(e) => onToggleModis(e.target.checked)}
+                />
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 500, color: '#94a3b8' }}>
+                  <span style={{ color: '#ef4444' }}>■</span> MODIS (Aqua & Terra) [1km] ({focosModis.length})
+                </span>
+              </label>
+
+              <label className="map-layer-toggle" id="layer-viirs-toggle">
+                <input
+                  type="checkbox"
+                  checked={showViirs}
+                  onChange={(e) => onToggleViirs(e.target.checked)}
+                />
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 500, color: '#94a3b8' }}>
+                  <span style={{ color: '#f59e0b' }}>●</span> VIIRS (NOAA-20/21) [375m] ({focosViirs.length})
+                </span>
+              </label>
+
+              <label className="map-layer-toggle" id="layer-serfor-toggle">
+                <input
+                  type="checkbox"
+                  checked={showSerfor}
+                  onChange={(e) => onToggleSerfor(e.target.checked)}
+                />
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 500, color: '#94a3b8' }}>
+                  <span style={{ color: '#10b981' }}>▲</span> SERFOR Oficial ({focosSerfor.length})
+                </span>
+              </label>
+
+              <div style={{ display: 'flex', gap: '6px', marginTop: '6px', paddingLeft: '22px' }}>
+                <a
+                  href={`${API_BASE}/firms/detecciones/exportar_qgis/`}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    fontSize: '10px',
+                    color: '#38bdf8',
+                    textDecoration: 'none',
+                    background: 'rgba(56, 189, 248, 0.12)',
+                    border: '1px solid rgba(56, 189, 248, 0.3)',
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    fontWeight: 600
+                  }}
+                  title="Descargar paquete completo para QGIS Desktop (.zip)"
+                >
+                  QGIS .zip
+                </a>
+                <a
+                  href={`${API_BASE}/firms/detecciones/exportar_kmz/`}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    fontSize: '10px',
+                    color: '#10b981',
+                    textDecoration: 'none',
+                    background: 'rgba(16, 185, 129, 0.12)',
+                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    fontWeight: 600
+                  }}
+                  title="Descargar mapa 3D para Google Earth (.kmz)"
+                >
+                  KMZ 3D
+                </a>
+              </div>
+            </div>
+
+            <div style={{ height: '1px', background: 'var(--border-subtle)' }} />
+
+            {/* 2. Predicción y Simulación */}
+            <div>
+              <div className="layer-dropdown-section-title">
+                <Flame size={12} color="#fb923c" />
+                <span>Predicción & Simulación Física</span>
+              </div>
+
+              <label className="map-layer-toggle" id="layer-ocurrencia-ml-toggle" style={{ color: '#f59e0b' }}>
+                <input
+                  type="checkbox"
+                  checked={showRiesgoOcurrencia}
+                  onChange={(e) => onToggleRiesgoOcurrencia?.(e.target.checked)}
+                />
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700 }}>
+                  <ShieldAlert size={14} color="#f59e0b" /> Riesgo Ocurrencia ML ({grillaOcurrencia?.features?.length || 0})
+                </span>
+              </label>
+              {showRiesgoOcurrencia && (
+                <div style={{ display: 'flex', gap: '6px', fontSize: '10px', paddingLeft: '22px', marginTop: '-3px', marginBottom: '2px', color: '#94a3b8' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><span style={{ width: '7px', height: '7px', borderRadius: '2px', background: '#10b981', display: 'inline-block' }}></span> &lt;25%</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><span style={{ width: '7px', height: '7px', borderRadius: '2px', background: '#f59e0b', display: 'inline-block' }}></span> 25-55%</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><span style={{ width: '7px', height: '7px', borderRadius: '2px', background: '#f97316', display: 'inline-block' }}></span> 55-80%</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><span style={{ width: '7px', height: '7px', borderRadius: '2px', background: '#ef4444', display: 'inline-block' }}></span> &gt;80%</span>
+                </div>
+              )}
+
+              <label className="map-layer-toggle" id="layer-simulacion-isocronas-toggle" style={{ color: '#fb923c' }}>
+                <input
+                  type="checkbox"
+                  checked={showSimulacionIsocronas}
+                  onChange={(e) => onToggleSimulacionIsocronas?.(e.target.checked)}
+                />
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700 }}>
+                  <Flame size={14} color="#f97316" /> Isócronas Fuego ({simulacionGeojson?.features?.length || 0})
+                </span>
+              </label>
+              {showSimulacionIsocronas && simulacionGeojson && (
+                <div style={{ display: 'flex', gap: '8px', fontSize: '10px', paddingLeft: '22px', marginTop: '-3px', marginBottom: '2px', color: '#cbd5e1' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#FBBF24', display: 'inline-block' }}></span> 1h
+                  </span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#F97316', display: 'inline-block' }}></span> 3h
+                  </span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#EF4444', display: 'inline-block' }}></span> 6h
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div style={{ height: '1px', background: 'var(--border-subtle)' }} />
+
+            {/* 3. Operaciones & Brigadas */}
+            <div>
+              <div className="layer-dropdown-section-title">
+                <Shield size={12} color="#06b6d4" />
+                <span>Operaciones & Brigadas</span>
+              </div>
+
+              <label className="map-layer-toggle" id="layer-inc-toggle">
+                <input
+                  type="checkbox"
+                  checked={showIncidentes}
+                  onChange={(e) => onToggleIncidentes(e.target.checked)}
+                />
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ color: '#fb923c' }}>●</span> Incidentes Activos ({incidentes.filter((i) => i.estado !== 'cerrado').length})
+                </span>
+              </label>
+
+              <label className="map-layer-toggle" id="layer-brig-toggle">
+                <input
+                  type="checkbox"
+                  checked={showBrigadas}
+                  onChange={(e) => onToggleBrigadas(e.target.checked)}
+                />
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ color: '#06b6d4' }}>■</span> Brigadas ({brigadas.length})
+                </span>
+              </label>
+
+              <label className="map-layer-toggle" id="layer-viv-toggle">
+                <input
+                  type="checkbox"
+                  checked={showViviendas}
+                  onChange={(e) => onToggleViviendas?.(e.target.checked)}
+                />
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Home size={13} color="#f59e0b" /> Viviendas Rurales ({viviendas.length})
+                </span>
+              </label>
+            </div>
+
+            <div style={{ height: '1px', background: 'var(--border-subtle)' }} />
+
+            {/* 4. Cartografía Oficial IGN / MTC / ANA */}
+            <div>
+              <div className="layer-dropdown-section-title">
+                <MapPin size={12} color="#38bdf8" />
+                <span>Cartografía Oficial & Cortafuegos</span>
+              </div>
+
+              <label className="map-layer-toggle" id="layer-limite-prov-toggle" style={{ color: '#38bdf8' }}>
+                <input
+                  type="checkbox"
+                  checked={showLimiteProvincial}
+                  onChange={(e) => onToggleLimiteProvincial?.(e.target.checked)}
+                />
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700 }}>
+                  <MapPin size={14} color="#38bdf8" /> Límite Parinacochas (IGN)
+                </span>
+              </label>
+
+              {showLimiteProvincial && (
+                <label className="map-layer-toggle" id="layer-distritos-toggle" style={{ paddingLeft: '22px', fontSize: '11px', color: '#94a3b8' }}>
+                  <input
+                    type="checkbox"
+                    checked={showDistritos}
+                    onChange={(e) => onToggleDistritos?.(e.target.checked)}
+                  />
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <Landmark size={13} color="#94a3b8" /> 8 Distritos e Hitos
+                  </span>
+                </label>
+              )}
+
+              <label className="map-layer-toggle" id="layer-carreteras-toggle" style={{ color: '#f59e0b' }}>
+                <input
+                  type="checkbox"
+                  checked={showCarreteras}
+                  onChange={(e) => onToggleCarreteras?.(e.target.checked)}
+                />
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
+                  <Route size={14} color="#f59e0b" /> Vías y Trochas Cortafuego (713)
+                </span>
+              </label>
+
+              <label className="map-layer-toggle" id="layer-rios-toggle" style={{ color: '#06b6d4' }}>
+                <input
+                  type="checkbox"
+                  checked={showRios}
+                  onChange={(e) => onToggleRios?.(e.target.checked)}
+                />
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
+                  <Droplets size={14} color="#06b6d4" /> Red Hidrográfica ANA (378)
+                </span>
+              </label>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Modal for Custom Date Range */}
+      {isDateModalOpen && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '64px',
+            right: '16px',
+            zIndex: 600,
+            background: 'rgba(15, 23, 42, 0.96)',
+            backdropFilter: 'blur(16px)',
+            border: '1px solid #38bdf8',
+            borderRadius: 'var(--radius-md)',
+            padding: '16px',
+            width: '280px',
+            boxShadow: '0 12px 36px rgba(0,0,0,0.8)'
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#ffffff', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Calendar size={14} color="#38bdf8" /> Rango Histórico (Hasta 6 Meses)
+            </h4>
+            <button
+              style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+              onClick={() => setIsDateModalOpen(false)}
+            >
+              <X size={15} />
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div>
+              <label style={{ fontSize: '11px', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
+                Desde (Inicio):
+              </label>
+              <input
+                type="date"
+                value={inputDesde}
+                onChange={(e) => setInputDesde(e.target.value)}
+                style={{
+                  width: '100%',
+                  background: '#0b1324',
+                  border: '1px solid var(--border-subtle)',
+                  color: '#ffffff',
+                  padding: '6px 8px',
+                  borderRadius: '4px',
+                  fontSize: '12px',
+                  fontFamily: 'var(--font-mono)'
+                }}
+              />
+            </div>
+
+            <div>
+              <label style={{ fontSize: '11px', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
+                Hasta (Fin):
+              </label>
+              <input
+                type="date"
+                value={inputHasta}
+                onChange={(e) => setInputHasta(e.target.value)}
+                style={{
+                  width: '100%',
+                  background: '#0b1324',
+                  border: '1px solid var(--border-subtle)',
+                  color: '#ffffff',
+                  padding: '6px 8px',
+                  borderRadius: '4px',
+                  fontSize: '12px',
+                  fontFamily: 'var(--font-mono)'
+                }}
+              />
+            </div>
+
+            <button
+              className="btn-primary"
+              style={{ width: '100%', marginTop: '6px', justifyContent: 'center' }}
+              onClick={handleApplyCustom}
+            >
+              <Check size={14} />
+              <span>Aplicar Filtro de Fechas</span>
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
