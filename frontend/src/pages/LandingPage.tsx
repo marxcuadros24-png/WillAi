@@ -140,13 +140,18 @@ export const LandingPage: React.FC = () => {
           <div>
             <div className="lp-badge-nasa">
               <img src="/Nasa logo.jfif" alt="NASA Logo" className="lp-badge-nasa-img" />
-              <span>NASA Space Apps Challenge</span>
+              <span>NASA Space Apps Challenge 2026</span>
             </div>
 
-            <h1 className="lp-hero-title">
-              Space Intelligence & Machine Learning to Protect the{' '}
-              <span className="lp-hero-highlight">Andes from Wildfires</span>
-            </h1>
+            <div className="lp-brand-hero-block">
+              <h1 className="lp-hero-brand-name">
+                WillAI
+              </h1>
+              <div className="lp-hero-subtitle-block">
+                Space Intelligence & Machine Learning to Protect the{' '}
+                <span className="lp-hero-highlight">High Andes from Wildfires</span>
+              </div>
+            </div>
 
             <p className="lp-hero-desc">
               WillAI bridges <strong>NASA FIRMS</strong> satellite observations (VIIRS 375m & MODIS 1km),
@@ -556,11 +561,10 @@ export const LandingPage: React.FC = () => {
         <div className="lp-cta-banner">
           <Droplets size={40} color="#38bdf8" style={{ marginBottom: '14px' }} />
           <h2 className="lp-section-title" style={{ fontSize: '1.8rem', marginBottom: '12px' }}>
-            Preserving the Andean Water Sponges (<em>Bofedales</em>)
+            Preserving the High-Andean Ecosystems
           </h2>
-          <p style={{ maxWidth: '780px', margin: '0 auto 24px auto', color: 'var(--lp-text-secondary)', lineHeight: 1.6, fontSize: '0.92rem' }}>
-            High-altitude wetlands (<em>bofedales</em>) store glacial meltwater that sustains rural communities throughout the dry season.
-            WillAI ensures wildfires are stopped before entering peat ecosystems, protecting water security and agrarian heritage.
+          <p style={{ maxWidth: '820px', margin: '0 auto 24px auto', color: 'var(--lp-text-secondary)', lineHeight: 1.6, fontSize: '0.94rem' }}>
+            The high-Andean pajonales and wetlands (bofedales) are the lifeblood of our province, sustaining rural communities throughout the dry season. By simulating fire propagation and issuing early alerts, WillAI provides the tactical intelligence needed to stop wildfires before they devastate these critical landscapes, protecting both regional water security and our agrarian heritage.
           </p>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
             <Link to="/mapa" className="lp-btn lp-btn-primary">
