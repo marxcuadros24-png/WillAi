@@ -85,8 +85,7 @@ def get_request_data(request):
     return request.POST
 
 
-@login_required
-@user_passes_test(es_operador)
+@csrf_exempt
 def panel_dashboard(request):
     """
     Endpoint informativo que confirma el desacoplamiento del panel administrativo hacia el Frontend SPA.

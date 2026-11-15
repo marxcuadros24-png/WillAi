@@ -6,19 +6,17 @@ import {
   Flame,
   CheckCircle2,
   Satellite,
-  LogOut,
   Clock,
   RefreshCw,
   CloudRain,
   Radio,
   ChevronRight,
   PlusCircle,
-  Shield,
   ShieldAlert,
   Menu,
-  Globe
+  Globe,
+  Home
 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
 import type { AppContextType } from '../context/AppContext';
 
 interface LayoutProps {
@@ -35,7 +33,6 @@ export const Layout: React.FC<LayoutProps> = ({ context }) => {
     onOpenCreateIncident,
     onOpenAlertModal
   } = context;
-  const { user, logout, isAdmin, rolDisplay } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
@@ -58,13 +55,6 @@ export const Layout: React.FC<LayoutProps> = ({ context }) => {
     const interval = setInterval(updateClock, 1000);
     return () => clearInterval(interval);
   }, []);
-
-  const handleLogout = async () => {
-    if (window.confirm('¿Desea cerrar la sesión del Centro de Mando Táctico?')) {
-      await logout();
-      navigate('/login');
-    }
-  };
 
   const incidentesCount = metricas?.incidentes_activos ?? incidentes.filter(i => i.estado !== 'cerrado').length;
   const reportesCount = metricas?.reportes_pendientes ?? reportes.filter(r => r.estado === 'recibido').length;
@@ -392,9 +382,9 @@ export const Layout: React.FC<LayoutProps> = ({ context }) => {
                   width: '36px',
                   height: '36px',
                   borderRadius: '50%',
-                  background: isAdmin ? 'rgba(245, 158, 11, 0.2)' : 'rgba(56, 189, 248, 0.2)',
-                  border: isAdmin ? '1px solid rgba(245, 158, 11, 0.5)' : '1px solid rgba(56, 189, 248, 0.4)',
-                  color: isAdmin ? '#f59e0b' : '#38bdf8',
+                  background: 'rgba(56, 189, 248, 0.2)',
+                  border: '1px solid rgba(56, 189, 248, 0.45)',
+                  color: '#38bdf8',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -403,47 +393,42 @@ export const Layout: React.FC<LayoutProps> = ({ context }) => {
                   flexShrink: 0
                 }}
               >
-                {(user?.nombre || user?.username || 'A').charAt(0).toUpperCase()}
+                W
               </div>
               {sidebarOpen && (
                 <div style={{ overflow: 'hidden' }}>
                   <div style={{ fontSize: '12px', fontWeight: 700, color: '#ffffff', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
-                    {user?.nombre || user?.username}
+                    Acceso Público
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }} title={rolDisplay}>
-                    {isAdmin ? (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '9.5px', color: '#f59e0b', fontWeight: 800, letterSpacing: '0.03em' }}>
-                        <Shield size={10} color="#f59e0b" /> ADMINISTRADOR
-                      </span>
-                    ) : (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '9.5px', color: '#38bdf8', fontWeight: 800, letterSpacing: '0.03em' }}>
-                        <Radio size={10} color="#38bdf8" /> OPERADOR COEP
-                      </span>
-                    )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }} title="Acceso Público Abierto">
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '9.5px', color: '#34d399', fontWeight: 800, letterSpacing: '0.03em' }}>
+                      <Globe size={10} color="#34d399" /> PÚBLICO / ABIERTO
+                    </span>
                   </div>
                 </div>
               )}
             </div>
 
             {sidebarOpen && (
-              <button
-                onClick={handleLogout}
+              <NavLink
+                to="/"
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  color: '#f87171',
+                  color: 'var(--text-muted)',
                   cursor: 'pointer',
                   padding: '6px',
                   borderRadius: '6px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  transition: 'background 0.2s'
+                  transition: 'background 0.2s, color 0.2s',
+                  textDecoration: 'none'
                 }}
-                title="Cerrar sesión"
+                title="Volver a la Página Principal (Inicio)"
               >
-                <LogOut size={16} />
-              </button>
+                <Home size={16} />
+              </NavLink>
             )}
           </div>
         </div>

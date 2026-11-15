@@ -24,9 +24,7 @@ class BrigadaViewSet(viewsets.ModelViewSet):
     search_fields = ['nombre']
 
     def get_permissions(self):
-        if self.action in ['list', 'retrieve']:
-            return [permissions.AllowAny()]
-        return [permissions.IsAdminUser()]
+        return [permissions.AllowAny()]
 
 
 class RecursoEmergenciaViewSet(viewsets.ModelViewSet):
@@ -39,6 +37,4 @@ class RecursoEmergenciaViewSet(viewsets.ModelViewSet):
     search_fields = ['nombre']
 
     def get_permissions(self):
-        if self.action in ['list', 'retrieve']:
-            return [permissions.AllowAny()]
-        return [permissions.IsAdminUser()]
+        return [permissions.AllowAny()]

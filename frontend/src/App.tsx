@@ -3,7 +3,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { CheckCircle, X, Send, MapPin, Crosshair, Plus, Flame, Shield, CheckCircle2, AlertTriangle, Megaphone, Home } from 'lucide-react';
 import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
-import { LoginPage } from './components/LoginPage';
 import { Layout } from './components/Layout';
 
 import { PanelPage } from './pages/PanelPage';
@@ -840,8 +839,8 @@ export const App: React.FC = () => {
           {/* Observatorio Público Ciudadano */}
           <Route path="/publico" element={<PortalPublicoPage />} />
 
-          {/* Login de Operadores Tácticos */}
-          <Route path="/login" element={<LoginPage />} />
+          {/* Redirección automática de login hacia el Mapa Táctico Público */}
+          <Route path="/login" element={<Navigate to="/mapa" replace />} />
 
           {/* Centro de Mando Táctico Protegido */}
           <Route

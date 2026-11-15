@@ -28,14 +28,12 @@ class ReporteViewSet(viewsets.ModelViewSet):
         return ReporteSerializer
 
     def get_permissions(self):
-        if self.action in ['list', 'retrieve', 'create']:
-            return [permissions.AllowAny()]
-        return [permissions.IsAuthenticated()]
+        return [permissions.AllowAny()]
 
     def perform_create(self, serializer):
         serializer.save()
 
-    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    @action(detail=True, methods=['post'], permission_classes=[permissions.AllowAny])
     def validar(self, request, pk=None):
         """
         Endpoint para verificadores: valida, observa o rechaza un reporte.
@@ -43,6 +41,7 @@ class ReporteViewSet(viewsets.ModelViewSet):
         reporte = self.get_object()
         resultado = request.data.get('resultado')
         comentario = request.data.get('comentario', '')
+        user_auth = request.user if (request.user and request.user.is_authenticated) else None
 
         if resultado not in [
             ValidacionReporte.ResultadoValidacion.VALIDADO,
@@ -57,7 +56,7 @@ class ReporteViewSet(viewsets.ModelViewSet):
         # Registrar la validación
         validacion = ValidacionReporte.objects.create(
             reporte=reporte,
-            revisor=request.user,
+            revisor=user_auth,
             resultado=resultado,
             comentario=comentario
         )
@@ -163,13 +162,14 @@ class ReporteViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK
         )
 
-    @action(detail=False, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    @action(detail=False, methods=['post'], permission_classes=[permissions.AllowAny])
     def sync_offline(self, request):
         """
         Sincronización en lote para reportes guardados en la App Móvil sin conexión.
         """
         items = request.data if isinstance(request.data, list) else [request.data]
         resultados = []
+        user_sync = request.user if (request.user and request.user.is_authenticated) else None
 
         for item in items:
             uuid_disp = item.get('uuid_dispositivo')
@@ -181,7 +181,7 @@ class ReporteViewSet(viewsets.ModelViewSet):
                 continue
 
             sync_obj, created = Sincronizacion.objects.get_or_create(
-                usuario=request.user,
+                usuario=user_sync,
                 uuid_dispositivo=uuid_disp,
                 uuid_registro_cliente=uuid_reg,
                 defaults={'tipo_registro': tipo_reg, 'estado': Sincronizacion.EstadoSync.PROCESANDO}
@@ -224,5 +224,5 @@ class EvidenciaViewSet(viewsets.ModelViewSet):
     """
     queryset = Evidencia.objects.select_related('reporte')
     serializer_class = EvidenciaSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
     filterset_fields = ['reporte', 'tipo']

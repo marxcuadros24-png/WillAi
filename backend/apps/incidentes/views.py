@@ -40,12 +40,10 @@ class IncidenteViewSet(viewsets.ModelViewSet):
         return IncidenteDetailSerializer
 
     def get_permissions(self):
-        if self.action in ['list', 'retrieve']:
-            return [permissions.AllowAny()]
-        return [permissions.IsAuthenticated()]
+        return [permissions.AllowAny()]
 
     def perform_create(self, serializer):
-        user = self.request.user
+        user = self.request.user if (self.request.user and self.request.user.is_authenticated) else None
         try:
             incidente = serializer.save(creado_por=user)
         except Exception:
@@ -73,7 +71,7 @@ class IncidenteViewSet(viewsets.ModelViewSet):
                 nota="Creación inicial del incidente"
             )
 
-    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    @action(detail=True, methods=['post'], permission_classes=[permissions.AllowAny])
     def asignar_brigada(self, request, pk=None):
         """
         Asigna una brigada de respuesta a un incidente y cambia su estado a 'ocupada'.
@@ -81,6 +79,7 @@ class IncidenteViewSet(viewsets.ModelViewSet):
         incidente = self.get_object()
         brigada_id = request.data.get('id_brigada')
         instrucciones = request.data.get('instrucciones', '')
+        user = request.user if (request.user and request.user.is_authenticated) else None
 
         try:
             brigada = Brigada.objects.get(pk=brigada_id)
@@ -90,7 +89,7 @@ class IncidenteViewSet(viewsets.ModelViewSet):
         asignacion = AsignacionBrigada.objects.create(
             incidente=incidente,
             brigada=brigada,
-            asignado_por=request.user,
+            asignado_por=user,
             instrucciones=instrucciones,
             estado=AsignacionBrigada.EstadoAsignacion.ASIGNADA
         )
@@ -107,7 +106,7 @@ class IncidenteViewSet(viewsets.ModelViewSet):
 
             HistorialIncidente.objects.create(
                 incidente=incidente,
-                usuario=request.user,
+                usuario=user,
                 estado_anterior=estado_ant,
                 estado_nuevo=incidente.estado,
                 nota=f"Brigada '{brigada.nombre}' asignada a la emergencia."
@@ -121,7 +120,7 @@ class IncidenteViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED
         )
 
-    @action(detail=True, methods=['patch'], permission_classes=[permissions.IsAuthenticated])
+    @action(detail=True, methods=['patch'], permission_classes=[permissions.AllowAny])
     def estado(self, request, pk=None):
         """
         Actualiza el estado operativo del incidente y registra en el historial.
@@ -129,6 +128,7 @@ class IncidenteViewSet(viewsets.ModelViewSet):
         incidente = self.get_object()
         nuevo_estado = request.data.get('estado')
         nota = request.data.get('nota', '')
+        user = request.user if (request.user and request.user.is_authenticated) else None
 
         if nuevo_estado not in Incidente.EstadoIncidente.values:
             return Response(
@@ -149,7 +149,7 @@ class IncidenteViewSet(viewsets.ModelViewSet):
         # Registrar historial
         HistorialIncidente.objects.create(
             incidente=incidente,
-            usuario=request.user,
+            usuario=user,
             estado_anterior=estado_anterior,
             estado_nuevo=nuevo_estado,
             nota=nota
@@ -162,7 +162,7 @@ class IncidenteViewSet(viewsets.ModelViewSet):
                 rep.save(update_fields=['estado'])
                 ValidacionReporte.objects.create(
                     reporte=rep,
-                    revisor=request.user,
+                    revisor=user,
                     resultado=ValidacionReporte.ResultadoValidacion.VALIDADO,
                     comentario=nota or f"Validado al confirmar incidente {incidente.codigo}"
                 )
@@ -171,7 +171,7 @@ class IncidenteViewSet(viewsets.ModelViewSet):
                 rep.save(update_fields=['estado'])
                 ValidacionReporte.objects.create(
                     reporte=rep,
-                    revisor=request.user,
+                    revisor=user,
                     resultado=ValidacionReporte.ResultadoValidacion.RECHAZADO,
                     comentario=nota or f"Rechazado al descartar incidente {incidente.codigo}"
                 )
@@ -185,7 +185,7 @@ class IncidenteViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK
         )
 
-    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    @action(detail=True, methods=['post'], permission_classes=[permissions.AllowAny])
     def cerrar(self, request, pk=None):
         """
         Cierra y liquida un incidente con acta/informe final.
@@ -193,6 +193,7 @@ class IncidenteViewSet(viewsets.ModelViewSet):
         incidente = self.get_object()
         motivo = request.data.get('motivo')
         evidencia_uri = request.data.get('evidencia_uri')
+        user = request.user if (request.user and request.user.is_authenticated) else None
 
         if not motivo:
             return Response({"error": "El motivo o informe de cierre es obligatorio."}, status=status.HTTP_400_BAD_REQUEST)
@@ -202,7 +203,7 @@ class IncidenteViewSet(viewsets.ModelViewSet):
 
         cierre = CierreIncidente.objects.create(
             incidente=incidente,
-            cerrado_por=request.user,
+            cerrado_por=user,
             motivo=motivo,
             evidencia_uri=evidencia_uri
         )
@@ -222,7 +223,7 @@ class IncidenteViewSet(viewsets.ModelViewSet):
 
         HistorialIncidente.objects.create(
             incidente=incidente,
-            usuario=request.user,
+            usuario=user,
             estado_anterior=estado_ant,
             estado_nuevo=incidente.estado,
             nota=f"Cierre definitivo del incidente: {motivo}"
@@ -243,8 +244,9 @@ class AccionAtencionViewSet(viewsets.ModelViewSet):
     """
     queryset = AccionAtencion.objects.select_related('incidente', 'brigada', 'usuario')
     serializer_class = AccionAtencionSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
     filterset_fields = ['incidente', 'brigada']
 
     def perform_create(self, serializer):
-        serializer.save(usuario=self.request.user)
+        user = self.request.user if (self.request.user and self.request.user.is_authenticated) else None
+        serializer.save(usuario=user)

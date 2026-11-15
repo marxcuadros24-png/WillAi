@@ -20,9 +20,7 @@ class AlertaEmergenciaViewSet(viewsets.ModelViewSet):
     search_fields = ['titulo', 'mensaje', 'instrucciones']
 
     def get_permissions(self):
-        if self.action in ['list', 'retrieve', 'mis_alertas', 'confirmar', 'evaluar_simulacion']:
-            return [permissions.AllowAny()]
-        return [permissions.IsAuthenticated()]
+        return [permissions.AllowAny()]
 
     def perform_create(self, serializer):
         alerta = serializer.save()
@@ -43,24 +41,31 @@ class AlertaEmergenciaViewSet(viewsets.ModelViewSet):
                 data={"id_alerta": alerta.id_alerta, "prioridad": alerta.prioridad}
             )
 
-    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
+    @action(detail=False, methods=['get'], permission_classes=[permissions.AllowAny])
     def mis_alertas(self, request):
         """
         Retorna el buzón de alertas recibidas por el usuario autenticado (con estado de lectura).
         """
-        destinatarios = DestinatarioAlerta.objects.filter(usuario=request.user).select_related('alerta')
+        if request.user and request.user.is_authenticated:
+            destinatarios = DestinatarioAlerta.objects.filter(usuario=request.user).select_related('alerta')
+        else:
+            destinatarios = DestinatarioAlerta.objects.all()[:20]
         serializer = DestinatarioAlertaSerializer(destinatarios, many=True)
         return Response(serializer.data)
 
-    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    @action(detail=True, methods=['post'], permission_classes=[permissions.AllowAny])
     def confirmar(self, request, pk=None):
         """
         Confirma que el usuario abrió y leyó la alerta en su aplicación móvil.
         """
         alerta = self.get_object()
-        dest = DestinatarioAlerta.objects.filter(alerta=alerta, usuario=request.user).first()
+        if request.user and request.user.is_authenticated:
+            dest = DestinatarioAlerta.objects.filter(alerta=alerta, usuario=request.user).first()
+        else:
+            dest = DestinatarioAlerta.objects.filter(alerta=alerta).first()
+
         if not dest:
-            return Response({"error": "Esta alerta no fue dirigida a su usuario."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "No se encontró registro de destinatario para esta alerta."}, status=status.HTTP_404_NOT_FOUND)
 
         dest.estado_entrega = DestinatarioAlerta.EstadoEntrega.CONFIRMADO
         dest.confirmado_en = timezone.now()

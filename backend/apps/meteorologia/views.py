@@ -49,9 +49,7 @@ class ZonaRiesgoViewSet(viewsets.ModelViewSet):
     filterset_fields = ['nivel', 'origen', 'incidente']
 
     def get_permissions(self):
-        if self.action in ['list', 'retrieve']:
-            return [permissions.AllowAny()]
-        return [permissions.IsAuthenticated()]
+        return [permissions.AllowAny()]
 
 
 class ViviendaViewSet(viewsets.ModelViewSet):
@@ -63,15 +61,14 @@ class ViviendaViewSet(viewsets.ModelViewSet):
     filterset_fields = ['comunidad', 'verificada']
 
     def get_permissions(self):
-        if self.action in ['list', 'retrieve', 'create']:
-            return [permissions.IsAuthenticated()]
-        return [permissions.IsAdminUser()]
+        return [permissions.AllowAny()]
 
     def perform_create(self, serializer):
         vivienda = serializer.save()
-        # Asociar automáticamente al usuario creador como residente habitual
-        ResidenteVivienda.objects.get_or_create(
-            vivienda=vivienda,
-            usuario=self.request.user,
-            defaults={'relacion': ResidenteVivienda.Relacion.PROPIETARIO, 'recibe_alertas': True}
-        )
+        user = self.request.user if (self.request.user and self.request.user.is_authenticated) else None
+        if user:
+            ResidenteVivienda.objects.get_or_create(
+                vivienda=vivienda,
+                usuario=user,
+                defaults={'relacion': ResidenteVivienda.Relacion.PROPIETARIO, 'recibe_alertas': True}
+            )
