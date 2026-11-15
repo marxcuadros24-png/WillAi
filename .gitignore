@@ -21,6 +21,8 @@ db.sqlite3
 db.sqlite3-journal
 backend/media/*
 !backend/media/.gitkeep
+!backend/media/evidencias/
+!backend/media/evidencias/**
 staticfiles/
 
 # Environment Variables & Secrets

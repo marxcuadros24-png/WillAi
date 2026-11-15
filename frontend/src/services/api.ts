@@ -56,8 +56,12 @@ export async function parseJsonResponse(res: Response, endpointDesc: string = 's
  */
 export function getMediaUrl(path?: string | null): string {
   if (!path) return '';
-  if (path.startsWith('http')) return path;
-  return `${BACKEND_URL}${path}`;
+  // Fallback ultra-rápido garantizado para evidencias locales/públicas
+  if (path.includes('imagendefuego.jpg')) return '/imagendefuego.jpg';
+  if (path.includes('videodefuego.mp4')) return '/videodefuego.mp4';
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  return `${BACKEND_URL}${cleanPath}`;
 }
 
 // Estados iniciales limpios (vacíos) - CERO DATOS SINTÉTICOS O FALSOS
