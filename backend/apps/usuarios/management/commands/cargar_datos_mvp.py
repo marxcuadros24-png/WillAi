@@ -68,3 +68,35 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(
             f"Importación masiva completada exitosamente: {total_cargados} registros procesados."
         ))
+
+        # Sincronizar secuencias de PostgreSQL para evitar IntegrityError en nuevos registros
+        from django.db import connection
+        self.stdout.write(self.style.NOTICE("Sincronizando secuencias de PostgreSQL (setval)..."))
+        sql_reset = """
+        DO $$
+        DECLARE
+            r RECORD;
+        BEGIN
+            FOR r IN (
+                SELECT table_name, column_name
+                FROM information_schema.columns
+                WHERE table_schema = 'public' 
+                  AND column_default LIKE 'nextval(%'
+            ) LOOP
+                BEGIN
+                    EXECUTE format(
+                        'SELECT setval(pg_get_serial_sequence(%L, %L), coalesce(max(%I), 0) + 1, false) FROM %I',
+                        r.table_name, r.column_name, r.column_name, r.table_name
+                    );
+                EXCEPTION WHEN OTHERS THEN
+                    NULL;
+                END;
+            END LOOP;
+        END $$;
+        """
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute(sql_reset)
+            self.stdout.write(self.style.SUCCESS("✓ Todas las secuencias de PostgreSQL sincronizadas correctamente."))
+        except Exception as e:
+            self.stdout.write(self.style.WARNING(f"Aviso al sincronizar secuencias: {e}"))

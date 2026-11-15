@@ -216,18 +216,36 @@ def ejecutar_simulacion_propagacion(simulacion_id: int) -> Dict[str, Any]:
         estrategia = obtener_estrategia(simulacion.modelo_motor.nombre)
         resultados_pasos = estrategia.ejecutar(simulacion)
 
-        # Persistir cada isócrona en la base de datos
+        # Persistir cada isócrona en la base de datos con auto-reparación de secuencias
         creados = []
         for hora_paso, datos in resultados_pasos.items():
-            resultado, _ = ResultadoPropagacion.objects.update_or_create(
-                simulacion=simulacion,
-                hora_paso=hora_paso,
-                defaults={
-                    "perimetro": datos["perimetro"],
-                    "area_hectareas": datos["area_hectareas"],
-                    "metadatos": datos["metadatos"],
-                }
-            )
+            try:
+                resultado, _ = ResultadoPropagacion.objects.update_or_create(
+                    simulacion=simulacion,
+                    hora_paso=hora_paso,
+                    defaults={
+                        "perimetro": datos["perimetro"],
+                        "area_hectareas": datos["area_hectareas"],
+                        "metadatos": datos["metadatos"],
+                    }
+                )
+            except Exception as e_key:
+                # Si la secuencia de PostgreSQL quedó desfasada por fixtures, auto-reparar setval en caliente
+                from django.db import connection
+                try:
+                    with connection.cursor() as cursor:
+                        cursor.execute("SELECT setval(pg_get_serial_sequence('resultados_propagacion', 'id_resultado'), coalesce(max(id_resultado), 0) + 1, false) FROM resultados_propagacion;")
+                except Exception:
+                    pass
+                resultado, _ = ResultadoPropagacion.objects.update_or_create(
+                    simulacion=simulacion,
+                    hora_paso=hora_paso,
+                    defaults={
+                        "perimetro": datos["perimetro"],
+                        "area_hectareas": datos["area_hectareas"],
+                        "metadatos": datos["metadatos"],
+                    }
+                )
             creados.append(resultado)
 
         simulacion.estado = SimulacionPropagacion.EstadoSimulacion.COMPLETADO

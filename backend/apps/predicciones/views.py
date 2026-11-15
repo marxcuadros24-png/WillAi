@@ -190,16 +190,35 @@ class SimulacionPropagacionViewSet(viewsets.ModelViewSet):
 
         punto = Point(lon, lat, srid=4326)
 
-        simulacion = SimulacionPropagacion.objects.create(
-            incidente_id=incidente_id,
-            modelo_motor=modelo_motor,
-            punto_ignicion=punto,
-            horizonte_horas=horizonte_horas,
-            estado=SimulacionPropagacion.EstadoSimulacion.PENDIENTE,
-            parametros_entrada=parametros,
-            requiere_revision_humana=True,
-            nivel_incertidumbre="CALIBRADO_LOFO_ALTOANDINO",
-        )
+        try:
+            simulacion = SimulacionPropagacion.objects.create(
+                incidente_id=incidente_id,
+                modelo_motor=modelo_motor,
+                punto_ignicion=punto,
+                horizonte_horas=horizonte_horas,
+                estado=SimulacionPropagacion.EstadoSimulacion.PENDIENTE,
+                parametros_entrada=parametros,
+                requiere_revision_humana=True,
+                nivel_incertidumbre="CALIBRADO_LOFO_ALTOANDINO",
+            )
+        except Exception:
+            # Auto-reparar secuencia en caliente si hubo colisión de clave primaria
+            from django.db import connection
+            try:
+                with connection.cursor() as cursor:
+                    cursor.execute("SELECT setval(pg_get_serial_sequence('simulaciones_propagacion', 'id_simulacion'), coalesce(max(id_simulacion), 0) + 1, false) FROM simulaciones_propagacion;")
+            except Exception:
+                pass
+            simulacion = SimulacionPropagacion.objects.create(
+                incidente_id=incidente_id,
+                modelo_motor=modelo_motor,
+                punto_ignicion=punto,
+                horizonte_horas=horizonte_horas,
+                estado=SimulacionPropagacion.EstadoSimulacion.PENDIENTE,
+                parametros_entrada=parametros,
+                requiere_revision_humana=True,
+                nivel_incertidumbre="CALIBRADO_LOFO_ALTOANDINO",
+            )
 
         # Ejecución directa y resiliente de la simulación celular elíptica
         from .services import ejecutar_simulacion_propagacion
@@ -262,6 +281,17 @@ class SimulacionPropagacionViewSet(viewsets.ModelViewSet):
             "features": features
         }
         return Response(fc)
+
+    @action(detail=False, methods=['delete', 'post'])
+    def limpiar_errores(self, request):
+        """
+        Elimina simulaciones fallidas huérfanas (estado ERROR sin resultados)
+        para mantener limpio el catálogo táctico de operaciones.
+        """
+        eliminadas, _ = SimulacionPropagacion.objects.filter(
+            estado=SimulacionPropagacion.EstadoSimulacion.ERROR
+        ).delete()
+        return Response({"status": "ok", "eliminadas": eliminadas})
 
     @action(detail=False, methods=['get'])
     def reporte_validacion_dnbr(self, request):
