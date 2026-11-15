@@ -530,7 +530,10 @@ export async function crearIncidente(datos: {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(datos)
   });
-  if (!res.ok) throw new Error('Error al crear incidente');
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || errorData.detail || `Error al crear incidente (${res.status})`);
+  }
   return await res.json();
 }
 

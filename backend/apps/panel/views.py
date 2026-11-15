@@ -24,6 +24,28 @@ from apps.auditoria.services import registrar_auditoria
 Usuario = get_user_model()
 
 
+def auto_repair_model_sequence(model):
+    """
+    Sincroniza la secuencia de PostgreSQL (pg_get_serial_sequence)
+    con el valor máximo real de la clave primaria para evitar colisiones IntegrityError.
+    """
+    from django.db import connection
+    try:
+        table = model._meta.db_table
+        pk_col = model._meta.pk.column
+        sql = f"""
+        SELECT setval(
+            pg_get_serial_sequence('{table}', '{pk_col}'),
+            coalesce(max("{pk_col}"), 1),
+            max("{pk_col}") IS NOT null
+        ) FROM "{table}";
+        """
+        with connection.cursor() as cursor:
+            cursor.execute(sql)
+    except Exception:
+        pass
+
+
 def es_administrador(user):
     """Verifica si el usuario es superusuario o tiene rol de administrador institucional."""
     return user.is_authenticated and (
@@ -381,34 +403,62 @@ def validar_reporte_rapido(request, id_reporte):
         }
         tipo_inc = tipo_map.get(reporte.tipo_incendio, 'pastizal')
 
-        incidente = Incidente.objects.create(
-            codigo=codigo,
-            titulo=titulo,
-            tipo_incendio=tipo_inc,
-            estado='confirmado',
-            prioridad='alta',
-            latitud_referencia=reporte.latitud,
-            longitud_referencia=reporte.longitud,
-            distrito=distrito,
-            comunidad=comunidad,
-            creado_por=user_fk,
-            detectado_en=reporte.fecha_evento or timezone.now(),
-            confirmado_en=timezone.now(),
-            resumen=reporte.descripcion or f"Reporte ciudadano #{reporte.id_reporte}"
-        )
+        try:
+            incidente = Incidente.objects.create(
+                codigo=codigo,
+                titulo=titulo,
+                tipo_incendio=tipo_inc,
+                estado='confirmado',
+                prioridad='alta',
+                latitud_referencia=reporte.latitud,
+                longitud_referencia=reporte.longitud,
+                distrito=distrito,
+                comunidad=comunidad,
+                creado_por=user_fk,
+                detectado_en=reporte.fecha_evento or timezone.now(),
+                confirmado_en=timezone.now(),
+                resumen=reporte.descripcion or f"Reporte ciudadano #{reporte.id_reporte}"
+            )
+        except Exception:
+            auto_repair_model_sequence(Incidente)
+            incidente = Incidente.objects.create(
+                codigo=codigo,
+                titulo=titulo,
+                tipo_incendio=tipo_inc,
+                estado='confirmado',
+                prioridad='alta',
+                latitud_referencia=reporte.latitud,
+                longitud_referencia=reporte.longitud,
+                distrito=distrito,
+                comunidad=comunidad,
+                creado_por=user_fk,
+                detectado_en=reporte.fecha_evento or timezone.now(),
+                confirmado_en=timezone.now(),
+                resumen=reporte.descripcion or f"Reporte ciudadano #{reporte.id_reporte}"
+            )
         ReporteIncidente.objects.create(
             incidente=incidente,
             reporte=reporte,
             tipo_vinculo=ReporteIncidente.TipoVinculo.ORIGEN,
             vinculado_por=user_fk
         )
-        HistorialIncidente.objects.create(
-            incidente=incidente,
-            usuario=user_fk,
-            estado_anterior=None,
-            estado_nuevo='confirmado',
-            nota=f"Incidente generado y confirmado al validar reporte #{id_reporte}: {comentario}"
-        )
+        try:
+            HistorialIncidente.objects.create(
+                incidente=incidente,
+                usuario=user_fk,
+                estado_anterior=None,
+                estado_nuevo='confirmado',
+                nota=f"Incidente generado y confirmado al validar reporte #{id_reporte}: {comentario}"
+            )
+        except Exception:
+            auto_repair_model_sequence(HistorialIncidente)
+            HistorialIncidente.objects.create(
+                incidente=incidente,
+                usuario=user_fk,
+                estado_anterior=None,
+                estado_nuevo='confirmado',
+                nota=f"Incidente generado y confirmado al validar reporte #{id_reporte}: {comentario}"
+            )
 
     registrar_auditoria(
         accion=f"VALIDAR_REPORTE_{resultado.upper()}",
@@ -495,18 +545,33 @@ def crear_incidente_rapido(request):
     lon_val = Decimal(str(lon)) if lon else (comunidad_obj.longitud if comunidad_obj and comunidad_obj.longitud else Decimal('-73.7806'))
 
     nombre_lugar = comunidad_obj.nombre if comunidad_obj else (distrito.nombre if distrito else 'Coracora')
-    incidente = Incidente.objects.create(
-        codigo=codigo,
-        titulo=titulo or f"Incendio en Sector {nombre_lugar}",
-        tipo_incendio=tipo_incendio,
-        estado='confirmado',
-        prioridad=prioridad,
-        latitud_referencia=lat_val,
-        longitud_referencia=lon_val,
-        distrito=distrito,
-        comunidad=comunidad_obj,
-        creado_por=user_para_fk
-    )
+    try:
+        incidente = Incidente.objects.create(
+            codigo=codigo,
+            titulo=titulo or f"Incendio en Sector {nombre_lugar}",
+            tipo_incendio=tipo_incendio,
+            estado='confirmado',
+            prioridad=prioridad,
+            latitud_referencia=lat_val,
+            longitud_referencia=lon_val,
+            distrito=distrito,
+            comunidad=comunidad_obj,
+            creado_por=user_para_fk
+        )
+    except Exception:
+        auto_repair_model_sequence(Incidente)
+        incidente = Incidente.objects.create(
+            codigo=codigo,
+            titulo=titulo or f"Incendio en Sector {nombre_lugar}",
+            tipo_incendio=tipo_incendio,
+            estado='confirmado',
+            prioridad=prioridad,
+            latitud_referencia=lat_val,
+            longitud_referencia=lon_val,
+            distrito=distrito,
+            comunidad=comunidad_obj,
+            creado_por=user_para_fk
+        )
 
     if id_reporte:
         rep = Reporte.objects.filter(id_reporte=id_reporte).first()
@@ -522,13 +587,23 @@ def crear_incidente_rapido(request):
             rep.estado = Reporte.EstadoReporte.VINCULADO
             rep.save(update_fields=['estado'])
 
-    HistorialIncidente.objects.create(
-        incidente=incidente,
-        usuario=user_para_fk,
-        estado_anterior=None,
-        estado_nuevo='confirmado',
-        nota=f"Incidente generado a partir del Reporte Ciudadano #{id_reporte}" if id_reporte else "Incidente registrado desde el Centro de Mando"
-    )
+    try:
+        HistorialIncidente.objects.create(
+            incidente=incidente,
+            usuario=user_para_fk,
+            estado_anterior=None,
+            estado_nuevo='confirmado',
+            nota=f"Incidente generado a partir del Reporte Ciudadano #{id_reporte}" if id_reporte else "Incidente registrado desde el Centro de Mando"
+        )
+    except Exception:
+        auto_repair_model_sequence(HistorialIncidente)
+        HistorialIncidente.objects.create(
+            incidente=incidente,
+            usuario=user_para_fk,
+            estado_anterior=None,
+            estado_nuevo='confirmado',
+            nota=f"Incidente generado a partir del Reporte Ciudadano #{id_reporte}" if id_reporte else "Incidente registrado desde el Centro de Mando"
+        )
 
     registrar_auditoria(
         accion="CREAR_INCIDENTE_PANEL",
@@ -1291,16 +1366,29 @@ def crear_brigada_rapida(request):
         entidad_obj = Entidad.objects.filter(tipo='comunidad').first() or Entidad.objects.first()
 
     with transaction.atomic():
-        brigada = Brigada.objects.create(
-            nombre=nombre,
-            tipo=tipo,
-            estado='disponible',
-            entidad=entidad_obj,
-            comunidad=comunidad_obj,
-            telefono_contacto=telefono or None,
-            latitud_base=lat,
-            longitud_base=lon
-        )
+        try:
+            brigada = Brigada.objects.create(
+                nombre=nombre,
+                tipo=tipo,
+                estado='disponible',
+                entidad=entidad_obj,
+                comunidad=comunidad_obj,
+                telefono_contacto=telefono or None,
+                latitud_base=lat,
+                longitud_base=lon
+            )
+        except Exception:
+            auto_repair_model_sequence(Brigada)
+            brigada = Brigada.objects.create(
+                nombre=nombre,
+                tipo=tipo,
+                estado='disponible',
+                entidad=entidad_obj,
+                comunidad=comunidad_obj,
+                telefono_contacto=telefono or None,
+                latitud_base=lat,
+                longitud_base=lon
+            )
 
         rol_brigadista = Rol.objects.filter(codigo='brigadista').first()
         hoy = timezone.now().date()
@@ -1537,20 +1625,37 @@ def crear_vivienda_rapida(request):
             conteo += 1
             codigo = f"VIV-{prefijo}-{conteo:03d}"
 
-    vivienda = Vivienda.objects.create(
-        comunidad=comunidad_obj,
-        codigo=codigo,
-        referencia=referencia,
-        latitud=lat,
-        longitud=lon,
-        material_predominante=material,
-        habitantes=habitantes,
-        nombre_responsable=nombre_responsable or None,
-        telefono_contacto=telefono or None,
-        verificada=verificada,
-        verificada_en=timezone.now() if verificada else None,
-        activa=True
-    )
+    try:
+        vivienda = Vivienda.objects.create(
+            comunidad=comunidad_obj,
+            codigo=codigo,
+            referencia=referencia,
+            latitud=lat,
+            longitud=lon,
+            material_predominante=material,
+            habitantes=habitantes,
+            nombre_responsable=nombre_responsable or None,
+            telefono_contacto=telefono or None,
+            verificada=verificada,
+            verificada_en=timezone.now() if verificada else None,
+            activa=True
+        )
+    except Exception:
+        auto_repair_model_sequence(Vivienda)
+        vivienda = Vivienda.objects.create(
+            comunidad=comunidad_obj,
+            codigo=codigo,
+            referencia=referencia,
+            latitud=lat,
+            longitud=lon,
+            material_predominante=material,
+            habitantes=habitantes,
+            nombre_responsable=nombre_responsable or None,
+            telefono_contacto=telefono or None,
+            verificada=verificada,
+            verificada_en=timezone.now() if verificada else None,
+            activa=True
+        )
 
     registrar_auditoria(
         accion="CREAR_VIVIENDA",

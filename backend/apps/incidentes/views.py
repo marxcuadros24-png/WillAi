@@ -46,15 +46,32 @@ class IncidenteViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         user = self.request.user
-        incidente = serializer.save(creado_por=user)
+        try:
+            incidente = serializer.save(creado_por=user)
+        except Exception:
+            from apps.panel.views import auto_repair_model_sequence
+            auto_repair_model_sequence(Incidente)
+            incidente = serializer.save(creado_por=user)
+
         # Registrar estado inicial en historial
-        HistorialIncidente.objects.create(
-            incidente=incidente,
-            usuario=user,
-            estado_anterior=None,
-            estado_nuevo=incidente.estado,
-            nota="Creación inicial del incidente"
-        )
+        try:
+            HistorialIncidente.objects.create(
+                incidente=incidente,
+                usuario=user,
+                estado_anterior=None,
+                estado_nuevo=incidente.estado,
+                nota="Creación inicial del incidente"
+            )
+        except Exception:
+            from apps.panel.views import auto_repair_model_sequence
+            auto_repair_model_sequence(HistorialIncidente)
+            HistorialIncidente.objects.create(
+                incidente=incidente,
+                usuario=user,
+                estado_anterior=None,
+                estado_nuevo=incidente.estado,
+                nota="Creación inicial del incidente"
+            )
 
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
     def asignar_brigada(self, request, pk=None):
