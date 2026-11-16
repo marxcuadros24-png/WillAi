@@ -34,7 +34,7 @@ const YoutubeIcon: React.FC<{ size?: number; color?: string; className?: string 
 
 export const LandingPage: React.FC = () => {
   const GITHUB_URL = 'https://github.com/marxcuadros24-png/WillAi-ML';
-  const YOUTUBE_URL = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'; // Replace with official demo URL
+  const YOUTUBE_URL = 'https://youtu.be/zCOxvvBGdzg';
 
   const [solutionTab, setSolutionTab] = useState<'command' | 'mobile'>('command');
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
@@ -624,7 +624,7 @@ export const LandingPage: React.FC = () => {
             </div>
             <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', borderRadius: '10px', background: '#000' }}>
               <iframe
-                src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"
+                src="https://www.youtube.com/embed/zCOxvvBGdzg?autoplay=1"
                 title="WillAI Demonstration Video"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
