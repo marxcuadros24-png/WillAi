@@ -592,6 +592,187 @@ body:has(.lp-container),
 }
 
 /* ==========================================================================
+   4.5 MOBILE APP LIVE SHOWCASE (PHONE MOCKUP + SILENT LOOP VIDEO)
+   ========================================================================== */
+.lp-mobile-showcase-box {
+  background: linear-gradient(135deg, rgba(11, 17, 32, 0.85), rgba(7, 12, 24, 0.92));
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  border-radius: 22px;
+  padding: 40px 36px;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55);
+  position: relative;
+  overflow: hidden;
+}
+
+.lp-mobile-showcase-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 40px;
+  align-items: center;
+}
+
+.lp-mobile-highlights {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.lp-mobile-highlight-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid var(--lp-border);
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.lp-mobile-highlight-item:hover {
+  background: rgba(30, 41, 59, 0.7);
+  border-color: rgba(56, 189, 248, 0.28);
+}
+
+.lp-mobile-highlight-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.lp-mobile-highlight-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 3px;
+}
+
+.lp-mobile-highlight-desc {
+  font-size: 0.83rem;
+  line-height: 1.48;
+  color: var(--lp-text-secondary);
+}
+
+.lp-phone-stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 0;
+}
+
+.lp-phone-glow {
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.22) 0%, rgba(56, 189, 248, 0.14) 45%, transparent 72%);
+  filter: blur(22px);
+  pointer-events: none;
+}
+
+.lp-phone-frame {
+  position: relative;
+  width: 268px;
+  max-width: 100%;
+  padding: 9px;
+  border-radius: 38px;
+  background: linear-gradient(155deg, #334155 0%, #0f172a 45%, #1e293b 100%);
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.78),
+    0 0 0 1px rgba(255, 255, 255, 0.12),
+    inset 0 1px 1px rgba(255, 255, 255, 0.22);
+  z-index: 1;
+}
+
+.lp-phone-notch {
+  position: absolute;
+  top: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 78px;
+  height: 18px;
+  border-radius: 999px;
+  background: #030712;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: 3;
+  pointer-events: none;
+}
+
+.lp-phone-screen {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 382 / 850;
+  border-radius: 30px;
+  overflow: hidden;
+  background: #030712;
+}
+
+.lp-phone-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.lp-phone-badge-top {
+  position: absolute;
+  top: 38px;
+  left: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(3, 7, 18, 0.68);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  font-family: var(--lp-font-mono);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #f8fafc;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.lp-phone-controls {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 3;
+}
+
+.lp-phone-ctrl-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(3, 7, 18, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #f8fafc;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.lp-phone-ctrl-btn:hover {
+  background: rgba(15, 23, 42, 0.95);
+  border-color: rgba(56, 189, 248, 0.6);
+  transform: scale(1.06);
+}
+
+/* ==========================================================================
    5. NASA EARTH OBSERVATIONS GRID
    ========================================================================== */
 .lp-nasa-grid {
@@ -787,6 +968,10 @@ body:has(.lp-container),
   .lp-tab-content-grid {
     grid-template-columns: 1fr;
   }
+  .lp-mobile-showcase-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
   .lp-nasa-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -801,6 +986,12 @@ body:has(.lp-container),
   }
   .lp-hero-title {
     font-size: 2.1rem;
+  }
+  .lp-mobile-showcase-box {
+    padding: 26px 18px;
+  }
+  .lp-phone-frame {
+    width: 240px;
   }
   .lp-hud-metric-row {
     grid-template-columns: 1fr;

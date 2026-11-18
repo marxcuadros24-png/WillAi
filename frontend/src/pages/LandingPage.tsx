@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Flame,
@@ -11,6 +11,11 @@ import {
   Mountain,
   Droplets,
   Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  Smartphone,
+  MapPin,
   X,
   Radio,
   ArrowRight
@@ -40,6 +45,15 @@ export const LandingPage: React.FC = () => {
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
   const [livePulse, setLivePulse] = useState(0);
 
+  // Lazy-load & viewport-aware silent loop for Mobile App showcase video
+  const mobileSectionRef = useRef<HTMLElement | null>(null);
+  const mobileVideoRef = useRef<HTMLVideoElement | null>(null);
+  const userPausedMobileVideoRef = useRef(false);
+  const isMobileSectionVisibleRef = useRef(false);
+  const [shouldLoadMobileVideo, setShouldLoadMobileVideo] = useState(false);
+  const [isMobileVideoMuted, setIsMobileVideoMuted] = useState(true);
+  const [isMobileVideoPlaying, setIsMobileVideoPlaying] = useState(false);
+
   // ENSURE SCROLL WORKS SEAMLESSLY ACROSS BROWSERS
   useEffect(() => {
     const rootEl = document.getElementById('root');
@@ -64,6 +78,71 @@ export const LandingPage: React.FC = () => {
       }
     };
   }, []);
+
+  // Load video only when approaching the Mobile Showcase section (0 KB on initial load)
+  useEffect(() => {
+    const sectionEl = mobileSectionRef.current;
+    if (!sectionEl) return;
+
+    if (typeof IntersectionObserver === 'undefined') {
+      setShouldLoadMobileVideo(true);
+      return;
+    }
+
+    const preloadObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setShouldLoadMobileVideo(true);
+          preloadObserver.disconnect();
+        }
+      },
+      { rootMargin: '250px 0px' }
+    );
+
+    const visibilityObserver = new IntersectionObserver(
+      (entries) => {
+        const isVisible = Boolean(entries[0]?.isIntersecting);
+        isMobileSectionVisibleRef.current = isVisible;
+        const video = mobileVideoRef.current;
+        if (!video) return;
+
+        if (isVisible && !userPausedMobileVideoRef.current) {
+          video.play().catch(() => {});
+        } else if (!isVisible) {
+          video.pause();
+        }
+      },
+      { threshold: 0.25 }
+    );
+
+    preloadObserver.observe(sectionEl);
+    visibilityObserver.observe(sectionEl);
+
+    return () => {
+      preloadObserver.disconnect();
+      visibilityObserver.disconnect();
+    };
+  }, []);
+
+  const toggleMobileVideoPlay = () => {
+    const video = mobileVideoRef.current;
+    if (!video) return;
+    if (video.paused) {
+      userPausedMobileVideoRef.current = false;
+      video.play().catch(() => {});
+    } else {
+      userPausedMobileVideoRef.current = true;
+      video.pause();
+    }
+  };
+
+  const toggleMobileVideoMute = () => {
+    const video = mobileVideoRef.current;
+    if (!video) return;
+    const nextMuted = !video.muted;
+    video.muted = nextMuted;
+    setIsMobileVideoMuted(nextMuted);
+  };
 
   const teamMembers = [
     {
@@ -469,6 +548,132 @@ export const LandingPage: React.FC = () => {
               </div>
             </div>
           )}
+        </div>
+      </section>
+
+      {/* 4.5 MOBILE APP LIVE SHOWCASE SECTION */}
+      <section className="lp-section" ref={mobileSectionRef}>
+        <div className="lp-mobile-showcase-box">
+          <div className="lp-mobile-showcase-grid">
+            {/* Left Column: Narrative & Key Highlights */}
+            <div>
+              <div className="lp-section-tag" style={{ marginBottom: '12px' }}>
+                Field Companion • Mobile Preview
+              </div>
+              <h2 className="lp-section-title" style={{ textAlign: 'left', fontSize: '2.35rem' }}>
+                WillAI Mobile App in Action
+              </h2>
+              <p className="lp-section-desc" style={{ textAlign: 'left', marginBottom: '24px' }}>
+                Watch our offline-first citizen app built for Andean communities. From bilingual Quechua Chanka
+                fire alerts to GPS-tagged incident reporting with local SQLite persistence, every screen is designed
+                for rapid action under zero cellular coverage.
+              </p>
+
+              <div className="lp-mobile-highlights">
+                <div className="lp-mobile-highlight-item">
+                  <div className="lp-mobile-highlight-icon" style={{ background: 'rgba(16, 185, 129, 0.14)', color: '#10b981' }}>
+                    <WifiOff size={18} />
+                  </div>
+                  <div>
+                    <div className="lp-mobile-highlight-title">Zero-Signal Offline Queue</div>
+                    <div className="lp-mobile-highlight-desc">
+                      Captures coordinates and visual evidence locally and syncs automatically once connectivity returns.
+                    </div>
+                  </div>
+                </div>
+
+                <div className="lp-mobile-highlight-item">
+                  <div className="lp-mobile-highlight-icon" style={{ background: 'rgba(245, 158, 11, 0.14)', color: '#f59e0b' }}>
+                    <Languages size={18} />
+                  </div>
+                  <div>
+                    <div className="lp-mobile-highlight-title">Bilingual Quechua & Spanish UX</div>
+                    <div className="lp-mobile-highlight-desc">
+                      Delivers culturally adapted life-safety guidance directly to rural farmers and volunteer brigades.
+                    </div>
+                  </div>
+                </div>
+
+                <div className="lp-mobile-highlight-item">
+                  <div className="lp-mobile-highlight-icon" style={{ background: 'rgba(56, 189, 248, 0.14)', color: '#38bdf8' }}>
+                    <MapPin size={18} />
+                  </div>
+                  <div>
+                    <div className="lp-mobile-highlight-title">Direct Command Center Telemetry</div>
+                    <div className="lp-mobile-highlight-desc">
+                      Citizen reports feed straight into the Coracora tactical map alongside NASA FIRMS thermal detections.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginTop: '26px' }}>
+                <Link to="/publico" className="lp-btn lp-btn-emerald" style={{ padding: '11px 20px' }}>
+                  <Globe size={16} />
+                  <span>Explore Citizen Portal</span>
+                  <ArrowRight size={14} />
+                </Link>
+                <div className="lp-chip">
+                  <Smartphone size={14} color="#38bdf8" />
+                  <span>EXPO MOBILE • 40s WALKTHROUGH</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column: Smartphone Mockup with Lazy-Loaded Silent Loop Video */}
+            <div className="lp-phone-stage">
+              <div className="lp-phone-glow" aria-hidden="true" />
+              <div className="lp-phone-frame">
+                <div className="lp-phone-notch" aria-hidden="true" />
+                <div className="lp-phone-screen">
+                  <video
+                    ref={mobileVideoRef}
+                    src={shouldLoadMobileVideo ? '/videodeaplicativomovil.mp4' : undefined}
+                    className="lp-phone-video"
+                    muted={isMobileVideoMuted}
+                    loop
+                    playsInline
+                    preload="metadata"
+                    disablePictureInPicture
+                    onLoadedData={(e) => {
+                      if (isMobileSectionVisibleRef.current && !userPausedMobileVideoRef.current) {
+                        e.currentTarget.play().catch(() => {});
+                      }
+                    }}
+                    onPlay={() => setIsMobileVideoPlaying(true)}
+                    onPause={() => setIsMobileVideoPlaying(false)}
+                    aria-label="WillAI mobile application walkthrough"
+                  />
+
+                  <div className="lp-phone-badge-top">
+                    <span className="lp-radar-dot" />
+                    <span>LIVE PREVIEW</span>
+                  </div>
+
+                  <div className="lp-phone-controls">
+                    <button
+                      type="button"
+                      onClick={toggleMobileVideoPlay}
+                      className="lp-phone-ctrl-btn"
+                      title={isMobileVideoPlaying ? 'Pause video' : 'Play video'}
+                      aria-label={isMobileVideoPlaying ? 'Pause mobile demo video' : 'Play mobile demo video'}
+                    >
+                      {isMobileVideoPlaying ? <Pause size={14} /> : <Play size={14} />}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={toggleMobileVideoMute}
+                      className="lp-phone-ctrl-btn"
+                      title={isMobileVideoMuted ? 'Unmute video' : 'Mute video'}
+                      aria-label={isMobileVideoMuted ? 'Unmute mobile demo video' : 'Mute mobile demo video'}
+                    >
+                      {isMobileVideoMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
